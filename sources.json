@@ -225,6 +225,14 @@
    "preferred": false
   },
   {
+   "id": "claroty-team82",
+   "name": "Claroty Team82 Blog",
+   "site": "https://claroty.com/blog",
+   "feed": "https://claroty.com/feed/",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
    "id": "clamav-blog",
    "name": "ClamAV® blog",
    "site": "http://blog.clamav.net",
@@ -429,6 +437,14 @@
    "name": "DCD",
    "site": "https://www.datacenterdynamics.com/en",
    "feed": "https://www.datacenterdynamics.com/rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "dragos-blog",
+   "name": "Dragos Blog",
+   "site": "https://www.dragos.com/blog/",
+   "feed": "https://www.dragos.com/feed/",
    "category": "cyber",
    "preferred": false
   },
@@ -697,6 +713,14 @@
    "preferred": false
   },
   {
+   "id": "huntress-blog",
+   "name": "Huntress Blog",
+   "site": "https://www.huntress.com/blog",
+   "feed": "https://www.huntress.com/blog/rss.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
    "id": "iacr-news",
    "name": "IACR News",
    "site": "https://www.iacr.org/news",
@@ -757,6 +781,14 @@
    "name": "KitPloit - PenTest Tools!",
    "site": "http://www.kitploit.com",
    "feed": "http://feeds.feedburner.com/PentestTools",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "kaspersky-securelist",
+   "name": "Kaspersky Securelist",
+   "site": "https://securelist.com",
+   "feed": "https://securelist.com/feed/",
    "category": "cyber",
    "preferred": false
   },
@@ -857,6 +889,14 @@
    "preferred": false
   },
   {
+   "id": "mandiant-blog",
+   "name": "Mandiant Blog",
+   "site": "https://www.mandiant.com/resources/blog",
+   "feed": "https://feeds.feedburner.com/Mandiant",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
    "id": "microsoft-security-blog",
    "name": "Microsoft Security Blog",
    "site": "https://www.microsoft.com/security/blog",
@@ -949,6 +989,14 @@
    "name": "NVISO Labs",
    "site": "https://blog.nviso.eu",
    "feed": "https://blog.nviso.eu/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "nozomi-networks-blog",
+   "name": "Nozomi Networks Blog",
+   "site": "https://www.nozominetworks.com/blog",
+   "feed": "https://www.nozominetworks.com/feed/",
    "category": "cyber",
    "preferred": false
   },
@@ -1145,6 +1193,14 @@
    "preferred": false
   },
   {
+   "id": "sans-internet-storm-center",
+   "name": "SANS Internet Storm Center",
+   "site": "https://isc.sans.edu",
+   "feed": "https://isc.sans.edu/rssfeed.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
    "id": "schneier-on-security",
    "name": "Schneier on Security",
    "site": "https://www.schneier.com",
@@ -1197,6 +1253,14 @@
    "name": "Secure Insights",
    "site": "https://www.axis.com/blog/secure-insights",
    "feed": "https://www.axis.com/blog/secure-insights/?feed=rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "sentinelone-sentinellabs",
+   "name": "SentinelOne SentinelLabs",
+   "site": "https://www.sentinelone.com/labs",
+   "feed": "https://www.sentinelone.com/labs/feed/",
    "category": "cyber",
    "preferred": false
   },
@@ -1593,6 +1657,14 @@
    "preferred": false
   },
   {
+   "id": "volexity-blog",
+   "name": "Volexity Blog",
+   "site": "https://www.volexity.com/blog",
+   "feed": "https://www.volexity.com/blog/feed/",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
    "id": "welivesecurity",
    "name": "WeLiveSecurity",
    "site": "https://www.welivesecurity.com",
@@ -1609,6 +1681,14 @@
    "preferred": false
   },
   {
+   "id": "wiz-research",
+   "name": "Wiz Research Blog",
+   "site": "https://www.wiz.io/blog/category/research",
+   "feed": "https://www.wiz.io/feed/rss.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
    "id": "zero-day-initiative-blog",
    "name": "Zero Day Initiative - Blog",
    "site": "https://www.zerodayinitiative.com/blog",
@@ -1617,10 +1697,26 @@
    "preferred": false
   },
   {
+   "id": "zscaler-threatlabz",
+   "name": "Zscaler ThreatLabz",
+   "site": "https://www.zscaler.com/blogs/security-research",
+   "feed": "https://www.zscaler.com/blogs/security-research/rss.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
    "id": "openai-news",
    "name": "OpenAI News",
    "site": "https://openai.com/news",
    "feed": "https://openai.com/news/rss.xml",
+   "category": "ai",
+   "preferred": false
+  },
+  {
+   "id": "anthropic-news",
+   "name": "Anthropic News",
+   "site": "https://anthropic.com/news",
+   "feed": "https://rsshub.bestblogs.dev/anthropic/news",
    "category": "ai",
    "preferred": false
   },
