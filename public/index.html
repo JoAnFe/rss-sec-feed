@@ -223,6 +223,7 @@
 "use strict";
 const $ = id => document.getElementById(id);
 const PAGE = 100;
+const PREFERRED_BOOST = 12 * 3600;  // mirror of server-side smart sort
 const state = {
   tab: localStorage.getItem("tab") || "all",
   sort: localStorage.getItem("sort") || "smart",
@@ -232,7 +233,10 @@ const state = {
   disabled: new Set(JSON.parse(localStorage.getItem("disabled") || "[]")),
   sources: null,
   pollTimer: null,
-  firstLoad: true,
+  corpus: null,     // full item list from data/items.json
+  meta: null,       // payload metadata (counts, generated_at, refresh)
+  breaking: null,   // clusters from data/breaking.json
+  mode: "static",   // "live" when served by server.py, "static" on Pages
 };
 
 /* ---------- helpers ---------- */
@@ -350,15 +354,31 @@ function renderHero(list) {
   $("hero").hidden = !list.length;
 }
 
-async function loadBreaking() {
+function pickRep(members) {
+  return members.slice().sort((a, b) =>
+    (b.preferred - a.preferred) || (a.guessed - b.guessed) ||
+    (b.summary.length - a.summary.length))[0];
+}
+
+function renderHeroView() {
   // the hero fronts the unfiltered view only — other tabs/search are focused modes
-  if (state.tab !== "all" || state.q) { $("hero").hidden = true; return; }
-  try {
-    const p = new URLSearchParams();
-    if (state.disabled.size) p.set("exclude", [...state.disabled].join(","));
-    const d = await (await fetch("/api/breaking?" + p)).json();
-    renderHero(d.breaking || []);
-  } catch { $("hero").hidden = true; }
+  const clusters = state.breaking && state.breaking.clusters;
+  if (state.tab !== "all" || state.q || !clusters) { $("hero").hidden = true; return; }
+  const out = [];
+  for (const cl of clusters) {
+    const ms = cl.members.filter(m => !state.disabled.has(m.source));
+    if (!ms.length) continue;
+    const rep = Object.assign({}, pickRep(ms));
+    const others = [];
+    for (const m of ms.slice().sort((a, b) => b.ts - a.ts))
+      if (m.source_name !== rep.source_name && !others.includes(m.source_name))
+        others.push(m.source_name);
+    rep.sources_count = new Set(ms.map(m => m.source)).size;
+    rep.other_sources = others.slice(0, 3);
+    out.push(rep);
+    if (out.length >= 5) break;
+  }
+  renderHero(out);
 }
 
 function skeletons(n) {
@@ -378,13 +398,14 @@ function renderItems(items, append) {
   $("moreBtn").hidden = state.offset + PAGE >= state.total;
 }
 
-function renderStatus(d) {
+function renderStatus() {
+  const d = state.meta;
+  if (!d) return;
   const r = d.refresh || {};
   let line1 = `<b>${d.sources_ok}</b>/${d.sources_total} sources live`;
   let line2;
   if (r.running) line2 = `fetching ${r.done}/${r.total}…`;
-  else if (r.finished) line2 = "updated " + timeago(r.finished);
-  else line2 = "starting…";
+  else line2 = "updated " + timeago(d.generated_at);
   $("status").innerHTML = line1 + "<br>" + line2;
 
   const p = $("progress"), fill = p.firstElementChild;
@@ -399,57 +420,87 @@ function renderStatus(d) {
   }
 }
 
-/* ---------- data ---------- */
-function itemsURL() {
-  const p = new URLSearchParams({
-    tab: state.tab, sort: state.sort, offset: state.offset, limit: PAGE,
-  });
-  if (state.q) p.set("q", state.q);
-  if (state.disabled.size) p.set("exclude", [...state.disabled].join(","));
-  return "/api/items?" + p;
+/* ---------- data ----------
+   The page is fully static: data/items.json is the whole corpus (also served
+   live by server.py at the same path) and all filtering happens client-side. */
+function filterCorpus() {
+  const terms = state.q.toLowerCase().split(/\s+/).filter(Boolean);
+  const seen = new Set(), out = [];
+  for (const it of state.corpus) {
+    if (state.disabled.has(it.source)) continue;
+    if (state.tab === "cyber" && it.category !== "cyber") continue;
+    if (state.tab === "ai" && !(it.category === "ai" || it.topics.includes("ai"))) continue;
+    if (state.tab === "exploited" && !it.topics.includes("exploited")) continue;
+    if (state.tab === "intel" && !it.topics.includes("threatintel")) continue;
+    if (terms.length) {
+      const blob = (it.title + " " + it.summary + " " + it.source_name).toLowerCase();
+      if (!terms.every(t => blob.includes(t))) continue;
+    }
+    const k = it.link || it.id;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(it);
+  }
+  if (state.sort === "latest") out.sort((a, b) => b.ts - a.ts);
+  else out.sort((a, b) =>
+    (b.ts + (b.preferred ? PREFERRED_BOOST : 0)) - (a.ts + (a.preferred ? PREFERRED_BOOST : 0)));
+  return out;
 }
 
-let reqSeq = 0;
-async function loadItems(append) {
-  const seq = ++reqSeq;
-  if (!append) {
-    state.offset = 0;
-    loadBreaking();  // fire-and-forget; hero follows the same lifecycle
-  }
+function applyView(append) {
+  if (!state.corpus) return;
+  if (!append) state.offset = 0;
+  const rows = filterCorpus();
+  state.total = rows.length;
+  renderItems(rows.slice(state.offset, state.offset + PAGE), append);
+  renderHeroView();
+  const note = $("note");
+  if (state.disabled.size) {
+    note.hidden = false;
+    note.textContent = `${state.disabled.size} sources hidden — manage in Sources.`;
+  } else note.hidden = true;
+}
+
+let fetchSeq = 0;
+async function fetchAll() {
+  const seq = ++fetchSeq;
   try {
-    const d = await (await fetch(itemsURL())).json();
-    if (seq !== reqSeq) return;            // stale response
-    state.total = d.total;
-    renderItems(d.items, append);
-    renderStatus(d);
-    const note = $("note");
-    if (state.disabled.size) {
-      note.hidden = false;
-      note.textContent = `${state.disabled.size} sources hidden — manage in Sources.`;
-    } else note.hidden = true;
-    schedulePoll(d.refresh && d.refresh.running);
+    const [items, breaking] = await Promise.all([
+      fetch("data/items.json", { cache: "no-cache" }).then(r => r.json()),
+      fetch("data/breaking.json", { cache: "no-cache" }).then(r => r.json()).catch(() => null),
+    ]);
+    if (seq !== fetchSeq) return;          // stale response
+    state.corpus = items.items || [];
+    state.meta = items;
+    state.breaking = breaking;
+    state.mode = items.mode === "live" ? "live" : "static";
+    $("refreshBtn").hidden = state.mode !== "live";
+    applyView(false);
+    renderStatus();
+    schedulePoll(items.refresh && items.refresh.running);
   } catch (e) {
-    if (!append) {
+    if (!state.corpus) {
       $("feed").textContent = "";
-      $("feed").appendChild(el("div", "empty", "Can't reach the server — is server.py running?"));
+      $("feed").appendChild(el("div", "empty",
+        "Can't load feed data — is the site still building?"));
     }
     schedulePoll(false);
   }
-  state.firstLoad = false;
 }
 
 function schedulePoll(fast) {
   clearTimeout(state.pollTimer);
+  const wait = fast ? 2500 : (state.mode === "live" ? 60000 : 300000);
   state.pollTimer = setTimeout(() => {
     // ambient refresh: don't yank the list out from under the reader
-    if (fast || (window.scrollY < 150 && state.offset === 0)) loadItems(false);
+    if (fast || (window.scrollY < 150 && state.offset === 0)) fetchAll();
     else schedulePoll(false);
-  }, fast ? 2500 : 60000);
+  }, wait);
 }
 
 /* ---------- sources panel ---------- */
 async function loadSources() {
-  const d = await (await fetch("/api/sources")).json();
+  const d = await (await fetch("data/sources.json", { cache: "no-cache" })).json();
   state.sources = d.sources;
   const list = $("plist");
   list.textContent = "";
@@ -486,7 +537,7 @@ async function loadSources() {
 }
 function persistDisabled() {
   localStorage.setItem("disabled", JSON.stringify([...state.disabled]));
-  loadItems(false);
+  applyView(false);
   if (state.sources) {
     const ok = state.sources.filter(s => s.status === "ok").length;
     const bad = state.sources.filter(s => s.status === "error").length;
@@ -516,16 +567,15 @@ $("tabs").addEventListener("click", e => {
   state.tab = b.dataset.tab;
   localStorage.setItem("tab", state.tab);
   document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x === b));
-  skeletons(6);
-  loadItems(false);
+  applyView(false);
 });
 let debounce;
 $("search").addEventListener("input", e => {
   clearTimeout(debounce);
-  debounce = setTimeout(() => { state.q = e.target.value.trim(); loadItems(false); }, 300);
+  debounce = setTimeout(() => { state.q = e.target.value.trim(); applyView(false); }, 300);
 });
 $("search").addEventListener("keydown", e => {
-  if (e.key === "Escape") { e.target.value = ""; state.q = ""; loadItems(false); }
+  if (e.key === "Escape") { e.target.value = ""; state.q = ""; applyView(false); }
 });
 document.addEventListener("keydown", e => {
   if (e.key === "/" && document.activeElement !== $("search")) {
@@ -536,12 +586,12 @@ $("sort").value = state.sort;
 $("sort").addEventListener("change", e => {
   state.sort = e.target.value;
   localStorage.setItem("sort", state.sort);
-  loadItems(false);
+  applyView(false);
 });
-$("moreBtn").addEventListener("click", () => { state.offset += PAGE; loadItems(true); });
+$("moreBtn").addEventListener("click", () => { state.offset += PAGE; applyView(true); });
 $("refreshBtn").addEventListener("click", async () => {
   $("refreshBtn").classList.add("spin");
-  await fetch("/api/refresh", { method: "POST" });
+  await fetch("api/refresh", { method: "POST" });
   schedulePoll(true);
 });
 $("sourcesBtn").addEventListener("click", openPanel);
@@ -555,7 +605,7 @@ $("prefOnly").addEventListener("click", () => setAll(s => s.preferred));
 document.querySelectorAll("#tabs button").forEach(b =>
   b.classList.toggle("on", b.dataset.tab === state.tab));
 skeletons(8);
-loadItems(false);
+fetchAll();
 </script>
 </body>
 </html>

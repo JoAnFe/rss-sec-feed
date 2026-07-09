@@ -26,6 +26,7 @@ import io
 import json
 import os
 import re
+import shutil
 import sys
 import threading
 import time
@@ -77,6 +78,9 @@ THREAT_INTEL_RE = re.compile(
 KEV_URL = ("https://www.cisa.gov/sites/default/files/feeds/"
            "known_exploited_vulnerabilities.json")
 KEV_REFRESH_SECONDS = 6 * 3600  # refetch the KEV catalog at most every 6h
+
+SITE_WINDOW_DAYS = 30      # static payload: drop items older than this
+SITE_MAX_ITEMS = 6000      # static payload: hard cap on shipped items
 
 BREAKING_WINDOW_SECONDS = 48 * 3600
 BREAKING_MAX = 5
@@ -684,6 +688,74 @@ def api_sources():
     return {"sources": out}
 
 
+# ------------------------------------------------------- static payloads
+# One data contract for both modes: the GitHub Pages build writes these to
+# site/data/*.json, and the local server serves the same shapes live at
+# /data/*.json — the frontend cannot tell the difference (except "mode").
+
+def payload_items(live=False):
+    kev = KEV["cves"]
+    cutoff = time.time() - SITE_WINDOW_DAYS * 86400
+    rows = []
+    with STATE_LOCK:
+        for sid, st in FEED_STATE.items():
+            src = SOURCES.get(sid)
+            if not src:
+                continue
+            for it in st.get("items", []):
+                if it["ts"] < cutoff:
+                    continue
+                rows.append((it, src))
+        ok = sum(1 for s in FEED_STATE.values() if s.get("status") == "ok")
+        refresh = dict(REFRESH)
+    rows.sort(key=lambda p: p[0]["ts"], reverse=True)
+    del rows[SITE_MAX_ITEMS:]
+    items = [{
+        "id": it["id"], "title": it["title"], "link": it["link"],
+        "ts": it["ts"], "guessed": it.get("guessed", False),
+        "summary": it["summary"], "topics": effective_topics(it, src, kev),
+        "cves": it.get("cves", []),
+        "source": src["id"], "source_name": src["name"],
+        "category": src["category"], "preferred": src["preferred"],
+        "site": src.get("site") or it["link"],
+    } for it, src in rows]
+    payload = {"items": items, "mode": "live" if live else "static",
+               "sources_total": len(SOURCES), "sources_ok": ok,
+               "generated_at": time.time()}
+    if live:
+        payload["refresh"] = refresh
+    return payload
+
+
+def payload_breaking():
+    with STATE_LOCK:
+        clusters = BREAKING["clusters"]
+        computed_at = BREAKING["computed_at"]
+    return {"clusters": [{"score": c["score"], "sources_count": c["sources_count"],
+                          "cves": c["cves"], "members": c["members"]}
+                         for c in clusters],
+            "computed_at": computed_at,
+            "window_hours": BREAKING_WINDOW_SECONDS // 3600}
+
+
+def build_site():
+    """One-shot: sweep every feed, then write a self-contained static site."""
+    refresh_all()  # fetches KEV, sweeps feeds, saves cache, computes breaking
+    out = ARGS.build
+    shutil.copytree(PUBLIC_DIR, out, dirs_exist_ok=True)
+    open(os.path.join(out, ".nojekyll"), "w").close()
+    data_dir = os.path.join(out, "data")
+    os.makedirs(data_dir, exist_ok=True)
+    for name, payload in (("items.json", payload_items(live=False)),
+                          ("breaking.json", payload_breaking()),
+                          ("sources.json", api_sources())):
+        path = os.path.join(data_dir, name)
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(payload, fh, ensure_ascii=False)
+        print(f"[build] {name}: {os.path.getsize(path) / 1024:.0f} KB")
+    print(f"[build] site written to {out}/")
+
+
 # ---------------------------------------------------------------- http
 
 class Handler(BaseHTTPRequestHandler):
@@ -730,6 +802,13 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(api_breaking(params))
             if parsed.path == "/api/sources":
                 return self._json(api_sources())
+            # same contract the static build bakes to site/data/*.json
+            if parsed.path == "/data/items.json":
+                return self._json(payload_items(live=True))
+            if parsed.path == "/data/breaking.json":
+                return self._json(payload_breaking())
+            if parsed.path == "/data/sources.json":
+                return self._json(api_sources())
             return self._static(parsed.path)
         except (BrokenPipeError, ConnectionResetError):
             pass
@@ -774,11 +853,16 @@ def main():
     ap.add_argument("--interval", type=int, default=900)
     ap.add_argument("--workers", type=int, default=16)
     ap.add_argument("--verbose", action="store_true")
+    ap.add_argument("--build", metavar="DIR",
+                    help="one-shot: sweep feeds, write a static site to DIR, exit")
     ARGS = ap.parse_args()
 
     load_sources()
     load_cache()
     load_kev()
+    if ARGS.build:
+        build_site()
+        return
     try:
         compute_breaking()  # populate the hero from cache before the first sweep
     except Exception as exc:  # noqa: BLE001

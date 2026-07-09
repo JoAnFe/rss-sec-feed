@@ -1,0 +1,56 @@
+name: Build & deploy to GitHub Pages
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"   # rebuild every 30 minutes
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # Rolling cache of data/ (cache.json + kev.json): preserves first-seen
+      # timestamps, keeps stale items for temporarily failing feeds, and
+      # avoids refetching the KEV catalog more than every 6h.
+      - name: Restore feed cache
+        uses: actions/cache@v4
+        with:
+          path: data
+          key: feed-data-${{ github.run_id }}
+          restore-keys: |
+            feed-data-
+
+      - name: Build static site
+        run: python3 server.py --build site --workers 24
+
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

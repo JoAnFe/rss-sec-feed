@@ -1,16 +1,26 @@
 # rss-sec-feed
 
-Local, zero-dependency headline aggregator for cybersecurity and frontier-AI news. Single Python file, standard library only — no pip installs.
+Zero-dependency headline aggregator for cybersecurity and frontier-AI news. Single Python file, standard library only — no pip installs. Runs two ways: **hosted on GitHub Pages** (static site rebuilt on a schedule by GitHub Actions) or as a **local live server**.
 
-## Run
+## GitHub Pages hosting
+
+`.github/workflows/pages.yml` rebuilds and deploys the site every 30 minutes (plus on every push to `main`, or manually via the Actions tab):
+
+1. Push the repo to GitHub.
+2. In the repo settings, set **Settings → Pages → Source** to **GitHub Actions** (the workflow also attempts to enable this automatically on first run).
+3. The site appears at `https://<user>.github.io/<repo>/`.
+
+Each run does one full feed sweep and writes a self-contained static site (`python3 server.py --build site`): the frontend plus `data/items.json` (last 30 days, max 6000 items), `data/breaking.json`, and `data/sources.json`. All filtering, search, and paging happen client-side, so the static page has full feature parity except the manual Refresh button (data updates when the workflow runs). A rolling Actions cache preserves `data/` between runs so first-seen timestamps survive and failing feeds keep their last-known items.
+
+## Run locally
 
 ```sh
 python3 server.py
 ```
 
-Open <http://127.0.0.1:8765>. First sweep of all feeds takes ~30–60s (progress bar shown); feeds auto-refresh every 15 minutes.
+Open <http://127.0.0.1:8765>. First sweep of all feeds takes ~30–60s (progress bar shown); feeds auto-refresh every 15 minutes and the Refresh button forces a sweep. The local server serves the same `data/*.json` contract dynamically, so the identical frontend runs in both modes.
 
-Options: `--port`, `--host`, `--interval`, `--workers`, `--verbose` (see `python3 server.py -h`).
+Options: `--port`, `--host`, `--interval`, `--workers`, `--verbose`, `--build DIR` (see `python3 server.py -h`).
 
 ## What it does
 
