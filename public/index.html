@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SecFeed — Cyber & Frontier AI Headlines</title>
+<style>
+  :root{
+    --bg:#0a0e14; --bg2:#0f141d; --card:#111722; --card2:#151d2a;
+    --line:#1e2735; --text:#e6edf3; --muted:#8b98a9; --faint:#5b6879;
+    --cyber:#22d3ee; --ai:#a78bfa; --gold:#f5c542; --ok:#34d399; --bad:#f87171;
+    --accent:#38bdf8;
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#f4f6f9; --bg2:#eef1f6; --card:#ffffff; --card2:#f7f9fc;
+      --line:#dde3ec; --text:#111827; --muted:#5b6675; --faint:#93a0b1;
+      --cyber:#0891b2; --ai:#7c3aed; --gold:#b8860b; --ok:#059669; --bad:#dc2626;
+      --accent:#0284c7;
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--text);
+    font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  a{color:inherit;text-decoration:none}
+
+  header{
+    position:sticky; top:0; z-index:20;
+    background:color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--line);
+  }
+  .wrap{max-width:880px; margin:0 auto; padding:0 16px}
+  .bar{display:flex; align-items:center; gap:12px; padding:12px 0}
+  .brand{display:flex; align-items:center; gap:9px; font-weight:700; font-size:17px; letter-spacing:.2px; white-space:nowrap}
+  .brand .logo{width:26px;height:26px;flex:none}
+  .brand small{font-weight:500;color:var(--muted);font-size:12px;margin-top:3px}
+  #status{margin-left:auto; text-align:right; font-size:12px; color:var(--muted); line-height:1.35; white-space:nowrap}
+  #status b{color:var(--text);font-weight:600}
+  #refreshBtn{
+    flex:none; border:1px solid var(--line); background:var(--card); color:var(--text);
+    border-radius:8px; padding:7px 12px; font-size:13px; cursor:pointer;
+  }
+  #refreshBtn:hover{border-color:var(--accent)}
+  #refreshBtn.spin svg{animation:rot 1s linear infinite}
+  @keyframes rot{to{transform:rotate(360deg)}}
+
+  .controls{display:flex; flex-wrap:wrap; gap:8px; padding:0 0 12px; align-items:center}
+  .tabs{display:flex; gap:4px; background:var(--card); border:1px solid var(--line); border-radius:9px; padding:3px}
+  .tabs button{
+    border:0; background:transparent; color:var(--muted); font-size:13px; font-weight:600;
+    padding:6px 12px; border-radius:7px; cursor:pointer;
+  }
+  .tabs button.on{background:var(--card2); color:var(--text); box-shadow:inset 0 0 0 1px var(--line)}
+  .tabs button .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:1px}
+  #search{
+    flex:1; min-width:160px; border:1px solid var(--line); background:var(--card); color:var(--text);
+    border-radius:9px; padding:8px 12px; font-size:14px; outline:none;
+  }
+  #search:focus{border-color:var(--accent)}
+  select,#sourcesBtn{
+    border:1px solid var(--line); background:var(--card); color:var(--text);
+    border-radius:9px; padding:8px 10px; font-size:13px; cursor:pointer;
+  }
+
+  #progress{height:3px; background:transparent; position:relative; overflow:hidden}
+  #progress.on{background:var(--line)}
+  #progress .fill{position:absolute;inset:0;right:100%;background:linear-gradient(90deg,var(--cyber),var(--ai));transition:right .4s}
+
+  main{padding:14px 0 60px}
+  .note{font-size:12.5px;color:var(--muted);padding:2px 2px 10px}
+  .item{
+    display:flex; gap:12px; padding:13px 14px; margin-bottom:8px;
+    background:var(--card); border:1px solid var(--line); border-radius:12px;
+  }
+  .item:hover{border-color:color-mix(in srgb, var(--accent) 45%, var(--line))}
+  .fav{width:20px;height:20px;flex:none;margin-top:2px;border-radius:5px;overflow:hidden}
+  .fav img{width:20px;height:20px;display:block}
+  .fav .ph{width:20px;height:20px;display:flex;align-items:center;justify-content:center;
+    font-size:10px;font-weight:700;color:var(--bg);border-radius:5px}
+  .body{flex:1;min-width:0}
+  .title{font-size:15px;font-weight:600;line-height:1.35;word-wrap:break-word}
+  .title a:hover{text-decoration:underline}
+  .meta{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:5px;font-size:12px;color:var(--muted)}
+  .src{font-weight:600;color:var(--text);opacity:.85}
+  .star{color:var(--gold)}
+  .badge{font-size:10px;font-weight:700;letter-spacing:.6px;padding:2px 7px;border-radius:99px}
+  .badge.cyber{color:var(--cyber);background:color-mix(in srgb, var(--cyber) 14%, transparent)}
+  .badge.ai{color:var(--ai);background:color-mix(in srgb, var(--ai) 14%, transparent)}
+  .badge.xai{color:var(--ai);background:transparent;box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--ai) 50%, transparent)}
+  .time{color:var(--faint)}
+  .sum{margin-top:5px;font-size:13px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .skel{height:74px;border-radius:12px;margin-bottom:8px;border:1px solid var(--line);
+    background:linear-gradient(100deg,var(--card) 40%,var(--card2) 50%,var(--card) 60%);
+    background-size:200% 100%; animation:sh 1.4s infinite}
+  @keyframes sh{to{background-position:-200% 0}}
+  #moreBtn{
+    display:block;margin:18px auto 0;border:1px solid var(--line);background:var(--card);
+    color:var(--text);border-radius:9px;padding:10px 26px;font-size:14px;cursor:pointer;
+  }
+  #moreBtn:hover{border-color:var(--accent)}
+  .empty{padding:60px 0;text-align:center;color:var(--muted)}
+
+  /* sources panel */
+  #backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:30;display:none}
+  #panel{
+    position:fixed;top:0;right:-420px;width:min(420px,94vw);height:100%;z-index:31;
+    background:var(--bg2);border-left:1px solid var(--line);transition:right .25s;
+    display:flex;flex-direction:column;
+  }
+  #panel.open{right:0}
+  #backdrop.open{display:block}
+  .phead{padding:16px;border-bottom:1px solid var(--line)}
+  .phead h2{margin:0 0 4px;font-size:16px}
+  .phead .sub{font-size:12px;color:var(--muted)}
+  .pactions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+  .pactions button{border:1px solid var(--line);background:var(--card);color:var(--text);
+    border-radius:7px;padding:5px 10px;font-size:12px;cursor:pointer}
+  .plist{flex:1;overflow-y:auto;padding:8px 10px 30px}
+  .pgroup{font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted);
+    text-transform:uppercase;padding:14px 6px 6px}
+  .prow{display:flex;align-items:center;gap:9px;padding:7px 6px;border-radius:8px;font-size:13px}
+  .prow:hover{background:var(--card)}
+  .prow input{accent-color:var(--accent);flex:none}
+  .health{width:8px;height:8px;border-radius:50%;flex:none}
+  .health.ok{background:var(--ok)} .health.error{background:var(--bad)} .health.pending{background:var(--faint)}
+  .pname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pcount{font-size:11px;color:var(--faint);flex:none}
+  .pclose{position:absolute;top:14px;right:14px;border:0;background:transparent;color:var(--muted);
+    font-size:20px;cursor:pointer;line-height:1}
+  @media (max-width:640px){
+    #status{display:none}
+    .sum{-webkit-line-clamp:3}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="bar">
+      <div class="brand">
+        <svg class="logo" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 2l8 3.5v5.7c0 5-3.4 9.2-8 10.8-4.6-1.6-8-5.8-8-10.8V5.5L12 2z"
+                stroke="var(--cyber)" stroke-width="1.6" fill="color-mix(in srgb, var(--cyber) 8%, transparent)"/>
+          <path d="M8.5 12.2l2.3 2.3 4.7-4.9" stroke="var(--ai)" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div>SecFeed<br><small>cyber &amp; frontier-AI headlines</small></div>
+      </div>
+      <div id="status">loading…</div>
+      <button id="refreshBtn" title="Fetch all feeds now">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style="vertical-align:-1px">
+          <path d="M20 12a8 8 0 1 1-2.3-5.6M20 3v5h-5" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Refresh
+      </button>
+    </div>
+    <div class="controls">
+      <div class="tabs" id="tabs">
+        <button data-tab="all" class="on">All</button>
+        <button data-tab="cyber"><span class="dot" style="background:var(--cyber)"></span>Cybersecurity</button>
+        <button data-tab="ai"><span class="dot" style="background:var(--ai)"></span>Frontier AI</button>
+      </div>
+      <input id="search" type="search" placeholder="Search headlines…  ( / )" autocomplete="off">
+      <select id="sort" title="Sort order">
+        <option value="smart">Top (preferred first)</option>
+        <option value="latest">Newest</option>
+      </select>
+      <button id="sourcesBtn">Sources</button>
+    </div>
+  </div>
+  <div id="progress"><div class="fill"></div></div>
+</header>
+
+<div class="wrap"><main>
+  <div class="note" id="note" hidden></div>
+  <div id="feed"></div>
+  <button id="moreBtn" hidden>Load more</button>
+</main></div>
+
+<div id="backdrop"></div>
+<aside id="panel" aria-label="Sources">
+  <button class="pclose" id="pclose" aria-label="Close">✕</button>
+  <div class="phead">
+    <h2>Sources</h2>
+    <div class="sub" id="psub">…</div>
+    <div class="pactions">
+      <button id="allOn">All on</button>
+      <button id="allOff">All off</button>
+      <button id="prefOnly">★ Preferred only</button>
+    </div>
+  </div>
+  <div class="plist" id="plist"></div>
+</aside>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const PAGE = 100;
+const state = {
+  tab: localStorage.getItem("tab") || "all",
+  sort: localStorage.getItem("sort") || "smart",
+  q: "",
+  offset: 0,
+  total: 0,
+  disabled: new Set(JSON.parse(localStorage.getItem("disabled") || "[]")),
+  sources: null,
+  pollTimer: null,
+  firstLoad: true,
+};
+
+/* ---------- helpers ---------- */
+function timeago(ts, guessed) {
+  const s = Math.max(0, Date.now() / 1000 - ts);
+  let t;
+  if (s < 90) t = "just now";
+  else if (s < 3600) t = Math.round(s / 60) + "m ago";
+  else if (s < 86400) t = Math.round(s / 3600) + "h ago";
+  else if (s < 86400 * 14) t = Math.round(s / 86400) + "d ago";
+  else t = new Date(ts * 1000).toLocaleDateString();
+  return (guessed ? "~" : "") + t;
+}
+function domainOf(u) { try { return new URL(u).hostname; } catch { return ""; } }
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  return n;
+}
+const PALETTE = ["#22d3ee","#a78bfa","#34d399","#f5c542","#fb7185","#60a5fa","#f97316"];
+function favicon(item) {
+  const box = el("div", "fav");
+  const dom = domainOf(item.site || item.link);
+  const ph = el("div", "ph", (item.source_name || "?")[0].toUpperCase());
+  ph.style.background = PALETTE[[...item.source].reduce((a, c) => a + c.charCodeAt(0), 0) % PALETTE.length];
+  if (dom) {
+    const img = new Image();
+    img.src = "https://www.google.com/s2/favicons?domain=" + encodeURIComponent(dom) + "&sz=64";
+    img.alt = "";
+    img.onerror = () => { img.replaceWith(ph); };
+    box.appendChild(img);
+  } else box.appendChild(ph);
+  return box;
+}
+
+/* ---------- rendering ---------- */
+function row(item) {
+  const it = el("article", "item");
+  it.appendChild(favicon(item));
+  const body = el("div", "body");
+
+  const title = el("div", "title");
+  const a = el("a", null, item.title);
+  a.href = item.link; a.target = "_blank"; a.rel = "noopener noreferrer";
+  title.appendChild(a);
+  body.appendChild(title);
+
+  const meta = el("div", "meta");
+  if (item.preferred) meta.appendChild(el("span", "star", "★"));
+  meta.appendChild(el("span", "src", item.source_name));
+  meta.appendChild(el("span", "badge " + (item.category === "ai" ? "ai" : "cyber"),
+    item.category === "ai" ? "AI" : "CYBER"));
+  if (item.category !== "ai" && item.topics.includes("ai"))
+    meta.appendChild(el("span", "badge xai", "AI"));
+  const t = el("span", "time", timeago(item.ts, item.guessed));
+  if (item.guessed) t.title = "Feed gave no publish date — time first seen";
+  meta.appendChild(t);
+  body.appendChild(meta);
+
+  if (item.summary) body.appendChild(el("div", "sum", item.summary));
+  it.appendChild(body);
+  return it;
+}
+
+function skeletons(n) {
+  const f = $("feed");
+  f.textContent = "";
+  for (let i = 0; i < n; i++) f.appendChild(el("div", "skel"));
+}
+
+function renderItems(items, append) {
+  const f = $("feed");
+  if (!append) f.textContent = "";
+  if (!items.length && !append) {
+    f.appendChild(el("div", "empty",
+      state.q ? "No stories match your search." : "No stories yet — feeds are still loading."));
+  }
+  for (const it of items) f.appendChild(row(it));
+  $("moreBtn").hidden = state.offset + PAGE >= state.total;
+}
+
+function renderStatus(d) {
+  const r = d.refresh || {};
+  let line1 = `<b>${d.sources_ok}</b>/${d.sources_total} sources live`;
+  let line2;
+  if (r.running) line2 = `fetching ${r.done}/${r.total}…`;
+  else if (r.finished) line2 = "updated " + timeago(r.finished);
+  else line2 = "starting…";
+  $("status").innerHTML = line1 + "<br>" + line2;
+
+  const p = $("progress"), fill = p.firstElementChild;
+  if (r.running && r.total) {
+    p.classList.add("on");
+    fill.style.right = (100 - 100 * r.done / r.total) + "%";
+    $("refreshBtn").classList.add("spin");
+  } else {
+    p.classList.remove("on");
+    fill.style.right = "100%";
+    $("refreshBtn").classList.remove("spin");
+  }
+}
+
+/* ---------- data ---------- */
+function itemsURL() {
+  const p = new URLSearchParams({
+    tab: state.tab, sort: state.sort, offset: state.offset, limit: PAGE,
+  });
+  if (state.q) p.set("q", state.q);
+  if (state.disabled.size) p.set("exclude", [...state.disabled].join(","));
+  return "/api/items?" + p;
+}
+
+let reqSeq = 0;
+async function loadItems(append) {
+  const seq = ++reqSeq;
+  if (!append) state.offset = 0;
+  try {
+    const d = await (await fetch(itemsURL())).json();
+    if (seq !== reqSeq) return;            // stale response
+    state.total = d.total;
+    renderItems(d.items, append);
+    renderStatus(d);
+    const note = $("note");
+    if (state.disabled.size) {
+      note.hidden = false;
+      note.textContent = `${state.disabled.size} sources hidden — manage in Sources.`;
+    } else note.hidden = true;
+    schedulePoll(d.refresh && d.refresh.running);
+  } catch (e) {
+    if (!append) {
+      $("feed").textContent = "";
+      $("feed").appendChild(el("div", "empty", "Can't reach the server — is server.py running?"));
+    }
+    schedulePoll(false);
+  }
+  state.firstLoad = false;
+}
+
+function schedulePoll(fast) {
+  clearTimeout(state.pollTimer);
+  state.pollTimer = setTimeout(() => {
+    // ambient refresh: don't yank the list out from under the reader
+    if (fast || (window.scrollY < 150 && state.offset === 0)) loadItems(false);
+    else schedulePoll(false);
+  }, fast ? 2500 : 60000);
+}
+
+/* ---------- sources panel ---------- */
+async function loadSources() {
+  const d = await (await fetch("/api/sources")).json();
+  state.sources = d.sources;
+  const list = $("plist");
+  list.textContent = "";
+  const ok = d.sources.filter(s => s.status === "ok").length;
+  const bad = d.sources.filter(s => s.status === "error").length;
+  $("psub").textContent =
+    `${d.sources.length} total · ${ok} live · ${bad} failing · ${state.disabled.size} hidden`;
+  let lastCat = null;
+  for (const s of d.sources) {
+    if (s.category !== lastCat) {
+      lastCat = s.category;
+      const n = d.sources.filter(x => x.category === s.category).length;
+      list.appendChild(el("div", "pgroup",
+        (s.category === "ai" ? "Frontier AI" : "Cybersecurity") + ` (${n})`));
+    }
+    const rowEl = el("label", "prow");
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = !state.disabled.has(s.id);
+    cb.onchange = () => {
+      cb.checked ? state.disabled.delete(s.id) : state.disabled.add(s.id);
+      persistDisabled();
+    };
+    rowEl.appendChild(cb);
+    const h = el("span", "health " + s.status);
+    h.title = s.status === "error" ? (s.error || "error") : s.status;
+    rowEl.appendChild(h);
+    const nm = el("span", "pname", (s.preferred ? "★ " : "") + s.name);
+    nm.title = s.feed;
+    rowEl.appendChild(nm);
+    rowEl.appendChild(el("span", "pcount", s.items ? s.items + " items" : ""));
+    list.appendChild(rowEl);
+  }
+}
+function persistDisabled() {
+  localStorage.setItem("disabled", JSON.stringify([...state.disabled]));
+  loadItems(false);
+  if (state.sources) {
+    const ok = state.sources.filter(s => s.status === "ok").length;
+    const bad = state.sources.filter(s => s.status === "error").length;
+    $("psub").textContent =
+      `${state.sources.length} total · ${ok} live · ${bad} failing · ${state.disabled.size} hidden`;
+  }
+}
+function setAll(pred) {
+  state.disabled = new Set(state.sources.filter(s => !pred(s)).map(s => s.id));
+  persistDisabled();
+  loadSources();
+}
+function openPanel() {
+  $("panel").classList.add("open");
+  $("backdrop").classList.add("open");
+  loadSources();
+}
+function closePanel() {
+  $("panel").classList.remove("open");
+  $("backdrop").classList.remove("open");
+}
+
+/* ---------- wiring ---------- */
+$("tabs").addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  state.tab = b.dataset.tab;
+  localStorage.setItem("tab", state.tab);
+  document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x === b));
+  skeletons(6);
+  loadItems(false);
+});
+let debounce;
+$("search").addEventListener("input", e => {
+  clearTimeout(debounce);
+  debounce = setTimeout(() => { state.q = e.target.value.trim(); loadItems(false); }, 300);
+});
+$("search").addEventListener("keydown", e => {
+  if (e.key === "Escape") { e.target.value = ""; state.q = ""; loadItems(false); }
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "/" && document.activeElement !== $("search")) {
+    e.preventDefault(); $("search").focus();
+  }
+});
+$("sort").value = state.sort;
+$("sort").addEventListener("change", e => {
+  state.sort = e.target.value;
+  localStorage.setItem("sort", state.sort);
+  loadItems(false);
+});
+$("moreBtn").addEventListener("click", () => { state.offset += PAGE; loadItems(true); });
+$("refreshBtn").addEventListener("click", async () => {
+  $("refreshBtn").classList.add("spin");
+  await fetch("/api/refresh", { method: "POST" });
+  schedulePoll(true);
+});
+$("sourcesBtn").addEventListener("click", openPanel);
+$("pclose").addEventListener("click", closePanel);
+$("backdrop").addEventListener("click", closePanel);
+$("allOn").addEventListener("click", () => setAll(() => true));
+$("allOff").addEventListener("click", () => setAll(() => false));
+$("prefOnly").addEventListener("click", () => setAll(s => s.preferred));
+
+/* ---------- boot ---------- */
+document.querySelectorAll("#tabs button").forEach(b =>
+  b.classList.toggle("on", b.dataset.tab === state.tab));
+skeletons(8);
+loadItems(false);
+</script>
+</body>
+</html>

@@ -1,0 +1,1724 @@
+{
+ "sources": [
+  {
+   "id": "a-few-thoughts-on-cryptographic-engineering",
+   "name": "A Few Thoughts on Cryptographic Engineering",
+   "site": "https://blog.cryptographyengineering.com",
+   "feed": "https://blog.cryptographyengineering.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "ai-techpark",
+   "name": "AI-TechPark",
+   "site": "https://ai-techpark.com",
+   "feed": "https://ai-techpark.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "akamai-blog",
+   "name": "Akamai Blog",
+   "site": "https://www.akamai.com/blog",
+   "feed": "http://feeds.feedburner.com/akamai/blog",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "almost-secure",
+   "name": "Almost Secure",
+   "site": "https://palant.info",
+   "feed": "https://palant.info/rss.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "anomali-blog",
+   "name": "Anomali Blog",
+   "site": "https://www.anomali.com/blog",
+   "feed": "https://www.anomali.com/site/blog-rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "api-security-news",
+   "name": "API Security News",
+   "site": "https://apisecurity.io",
+   "feed": "https://apisecurity.io/feed/index.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "application-security-research-news-and-education-blog",
+   "name": "Application Security Research, News, and Education Blog",
+   "site": "https://www.veracode.com",
+   "feed": "https://www.veracode.com/blog/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "asec-blog",
+   "name": "ASEC BLOG",
+   "site": "https://asec.ahnlab.com/en",
+   "feed": "https://asec.ahnlab.com/en/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "australian-information-security-awareness-and-advisory",
+   "name": "Australian Information Security Awareness and Advisory",
+   "site": "https://kirbyidau.com",
+   "feed": "https://kirbyidau.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "avast-threat-labs",
+   "name": "Avast Threat Labs",
+   "site": "https://decoded.avast.io",
+   "feed": "https://decoded.avast.io/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "aws-threat-research-team-aws-security-blog",
+   "name": "AWS Threat Research Team – AWS Security Blog",
+   "site": "https://aws.amazon.com/blogs/security",
+   "feed": "https://aws.amazon.com/blogs/security/tag/aws-threat-research-team/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "big-data-on-techrepublic",
+   "name": "Big Data on TechRepublic",
+   "site": "https://www.techrepublic.com",
+   "feed": "https://www.techrepublic.com/rssfeeds/topic/big-data",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "bishopfox-com",
+   "name": "bishopfox.com",
+   "site": "https://bishopfox.com",
+   "feed": "https://bishopfox.com/feeds/blog.rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "bitdefender-labs",
+   "name": "Bitdefender Labs",
+   "site": "https://www.bitdefender.com/blog/labs",
+   "feed": "https://www.bitdefender.com/blog/api/rss/labs",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "bleepingcomputer",
+   "name": "BleepingComputer",
+   "site": "https://www.bleepingcomputer.com",
+   "feed": "https://www.bleepingcomputer.com/feed",
+   "category": "cyber",
+   "preferred": true
+  },
+  {
+   "id": "blockchain-threat-intelligence",
+   "name": "Blockchain Threat Intelligence",
+   "site": "https://newsletter.blockthreat.io",
+   "feed": "https://newsletter.blockthreat.io/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "blog-cnsight-io-cybersecurity-performance-improvement",
+   "name": "Blog – CnSight.io – Cybersecurity Performance Improvement",
+   "site": "https://cnsight.io",
+   "feed": "https://cnsight.io/blog/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "blog-crowdstrike-com",
+   "name": "Blog - crowdstrike.com",
+   "site": "https://www.crowdstrike.com",
+   "feed": "https://www.crowdstrike.com/blog/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "blog-praetorian",
+   "name": "Blog - Praetorian",
+   "site": "https://www.praetorian.com/blog",
+   "feed": "https://www.praetorian.com/blog/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "blog-what-s-new-offensive-security",
+   "name": "Blog & What's New | Offensive Security",
+   "site": "https://www.offensive-security.com",
+   "feed": "https://www.offensive-security.com/blog/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "blog-zerofox",
+   "name": "Blog – ZeroFox",
+   "site": "https://www.zerofox.com",
+   "feed": "https://www.zerofox.com/blog/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "bloomberg-technology",
+   "name": "Bloomberg Technology",
+   "site": "https://bloomberg.com/technology",
+   "feed": "https://feeds.bloomberg.com/technology/news.rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "c4isrnet",
+   "name": "C4ISRNet",
+   "site": "https://www.c4isrnet.com",
+   "feed": "https://www.c4isrnet.com/arc/outboundfeeds/rss/category/cyber/?outputType=xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "center-for-internet-security-multi-state-information-sharing-and-analysis-center",
+   "name": "Center for Internet Security - Multi-State Information Sharing and Analysis Center",
+   "site": "https://www.cisecurity.org",
+   "feed": "https://www.cisecurity.org/feed/advisories",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "cert-recently-published-vulnerability-notes",
+   "name": "CERT Recently Published Vulnerability Notes",
+   "site": "https://kb.cert.org/vuls",
+   "feed": "https://www.kb.cert.org/vulfeed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "check-point-research",
+   "name": "Check Point Research",
+   "site": "https://research.checkpoint.com",
+   "feed": "https://research.checkpoint.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "cisco-newsroom-security",
+   "name": "Cisco Newsroom: Security",
+   "site": "https://newsroom.cisco.com",
+   "feed": "https://newsroom.cisco.com/c/services/i/servlets/newsroom/rssfeed.json?feed=security",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "cisco-talos-intelligence-group-comprehensive-threat-intelligence",
+   "name": "Cisco Talos Intelligence Group - Comprehensive Threat Intelligence",
+   "site": "http://blog.talosintelligence.com",
+   "feed": "https://feeds.feedburner.com/feedburner/Talos",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "clamav-blog",
+   "name": "ClamAV® blog",
+   "site": "http://blog.clamav.net",
+   "feed": "https://feeds.feedburner.com/Clamav",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "cloud-security-alliance",
+   "name": "Cloud Security Alliance",
+   "site": "https://cloudsecurityalliance.org/feed",
+   "feed": "https://cloudsecurityalliance.org/blog/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "cofense",
+   "name": "Cofense",
+   "site": "https://cofense.com",
+   "feed": "https://cofense.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "compass-security-blog",
+   "name": "Compass Security Blog",
+   "site": "https://blog.compass-security.com",
+   "feed": "https://blog.compass-security.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "computer-forensics",
+   "name": "Computer Forensics",
+   "site": "https://www.reddit.com/r/computerforensics",
+   "feed": "https://www.reddit.com/r/computerforensics.json?limit=50",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "computerweekly-com",
+   "name": "ComputerWeekly.com",
+   "site": "https://www.computerweekly.com",
+   "feed": "https://www.computerweekly.com/rss/IT-security.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "crunchbase-news",
+   "name": "Crunchbase News",
+   "site": "https://news.crunchbase.com",
+   "feed": "https://news.crunchbase.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "cs-cr-updates-on-arxiv-org",
+   "name": "cs.CR updates on arXiv.org",
+   "site": "https://arxiv.org",
+   "feed": "https://export.arxiv.org/rss/cs.CR",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "cso-online",
+   "name": "CSO Online",
+   "site": "https://www.csoonline.com",
+   "feed": "https://www.csoonline.com/index.rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "cybercrime-magazine",
+   "name": "Cybercrime Magazine",
+   "site": "https://cybersecurityventures.com",
+   "feed": "https://cybersecurityventures.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "cyber-defence-news-for-blue-purple-teams",
+   "name": "Cyber Defence News for Blue & Purple Teams",
+   "site": "https://bluepurple.substack.com",
+   "feed": "https://bluepurple.substack.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "cyber-defense-magazine",
+   "name": "Cyber Defense Magazine",
+   "site": "https://www.cyberdefensemagazine.com",
+   "feed": "https://www.cyberdefensemagazine.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "cyberscoop",
+   "name": "CyberScoop",
+   "site": "https://www.cyberscoop.com",
+   "feed": "https://www.cyberscoop.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "cybersecurity",
+   "name": "cybersecurity",
+   "site": "https://www.reddit.com/r/cybersecurity",
+   "feed": "https://www.reddit.com/r/cybersecurity.json?limit=50",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "cybersecurity-2",
+   "name": "Cybersecurity",
+   "site": "https://www.lawfareblog.com/taxonomy/term/5798/all",
+   "feed": "https://www.lawfareblog.com/taxonomy/term/5798/all/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "cybersecurity-dive-latest-news",
+   "name": "Cybersecurity Dive - Latest News",
+   "site": "https://www.cybersecuritydive.com/news",
+   "feed": "https://www.cybersecuritydive.com/feeds/news",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "cybersecurity-insights",
+   "name": "Cybersecurity Insights",
+   "site": "https://www.nist.gov",
+   "feed": "https://www.nist.gov/blogs/cybersecurity-insights/rss.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "cyber-security-news",
+   "name": "Cyber Security News",
+   "site": "https://cybersecuritynews.com",
+   "feed": "https://cybersecuritynews.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "cybersecurity-tech-eu",
+   "name": "Cybersecurity - Tech.eu",
+   "site": "https://tech.eu/category/cybersecurity",
+   "feed": "https://tech.eu/category/cybersecurity/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "darknetlive-post-feed",
+   "name": "DarknetLive Post Feed",
+   "site": "https://darknetlive.com",
+   "feed": "https://darknetlive.com/rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "dark-reading",
+   "name": "Dark Reading",
+   "site": "https://www.darkreading.com",
+   "feed": "https://www.darkreading.com/rss.xml",
+   "category": "cyber",
+   "preferred": true
+  },
+  {
+   "id": "dark-roast-security-medium",
+   "name": "Dark Roast Security - Medium",
+   "site": "https://medium.com/dark-roast-security?source=rss----38222a97af40---4",
+   "feed": "https://medium.com/feed/dark-roast-security",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "data-and-computer-security-the-guardian",
+   "name": "Data and computer security | The Guardian",
+   "site": "https://www.theguardian.com/technology/data-computer-security",
+   "feed": "https://www.theguardian.com/technology/data-computer-security/rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "databreachtoday-co-uk-rss-syndication",
+   "name": "DataBreachToday.co.uk  RSS Syndication",
+   "site": "https://www.databreachtoday.co.uk/rssFeeds.php?type=main",
+   "feed": "https://www.databreachtoday.co.uk/rss-feeds",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "datadog-security-labs",
+   "name": "Datadog Security Labs",
+   "site": "https://securitylabs.datadoghq.com",
+   "feed": "https://securitylabs.datadoghq.com/rss/feed.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "dcd",
+   "name": "DCD",
+   "site": "https://www.datacenterdynamics.com/en",
+   "feed": "https://www.datacenterdynamics.com/rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "deeplinks",
+   "name": "Deeplinks",
+   "site": "https://www.eff.org/rss/updates.xml",
+   "feed": "https://www.eff.org/rss/updates.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "dev-community",
+   "name": "DEV Community",
+   "site": "https://dev.to",
+   "feed": "https://dev.to/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "dev-random",
+   "name": "/dev/random",
+   "site": "https://blog.rootshell.be",
+   "feed": "https://blog.rootshell.be/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "digital-journal",
+   "name": "Digital Journal",
+   "site": "https://www.digitaljournal.com",
+   "feed": "https://www.digitaljournal.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "digital-shadows",
+   "name": "Digital Shadows",
+   "site": "https://www.digitalshadows.com",
+   "feed": "https://www.digitalshadows.com/blog-and-research/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "discussion-and-disclosure-of-web-vulnerabilities",
+   "name": "Discussion and Disclosure of Web Vulnerabilities",
+   "site": "https://www.reddit.com/r/websec",
+   "feed": "https://www.reddit.com/r/websec.json?limit=50",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "elastic-blog-elasticsearch-kibana-and-elk-stack",
+   "name": "Elastic Blog - Elasticsearch, Kibana, and ELK Stack",
+   "site": "https://www.elastic.co",
+   "feed": "https://www.elastic.co/blog/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "embrace-the-red",
+   "name": "Embrace The Red",
+   "site": "https://embracethered.com/blog",
+   "feed": "https://embracethered.com/blog/index.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "encryption-news-sciencedaily",
+   "name": "Encryption News -- ScienceDaily",
+   "site": "https://www.sciencedaily.com/news/computers_math/encryption",
+   "feed": "https://www.sciencedaily.com/rss/computers_math/encryption.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "esecurityplanet",
+   "name": "eSecurityPlanet",
+   "site": "https://www.esecurityplanet.com",
+   "feed": "https://www.esecurityplanet.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "exploitalert",
+   "name": "Exploitalert",
+   "site": "http://www.exploitalert.com",
+   "feed": "http://www.exploitalert.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "exploit-db-com-rss-feed",
+   "name": "Exploit-DB.com RSS Feed",
+   "site": "https://www.exploit-db.com",
+   "feed": "https://www.exploit-db.com/rss.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "forbes-cybersecurity",
+   "name": "Forbes - Cybersecurity",
+   "site": "https://www.forbes.com/cybersecurity",
+   "feed": "https://www.forbes.com/cybersecurity/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "for-blue-purple-teams-in-cyber-defence",
+   "name": "For [Blue|Purple] Teams in Cyber Defence",
+   "site": "https://www.reddit.com/r/blueteamsec",
+   "feed": "https://www.reddit.com/r/blueteamsec.json?limit=50",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "fortiguard-labs-fortiguard-center-ir-advisories",
+   "name": "FortiGuard Labs | FortiGuard Center - IR Advisories",
+   "site": "https://fortiguard.fortinet.com/rss/ir.xml",
+   "feed": "https://filestore.fortinet.com/fortiguard/rss/ir.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "fortiguard-labs-fortiguard-center-threat-signal-report",
+   "name": "FortiGuard Labs | FortiGuard Center - Threat Signal Report",
+   "site": "https://fortiguard.fortinet.com/rss/threatsignal.xml",
+   "feed": "https://filestore.fortinet.com/fortiguard/rss/threatsignal.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "gbhackers-on-security",
+   "name": "GBHackers On Security",
+   "site": "https://gbhackers.com",
+   "feed": "http://feeds.feedburner.com/gbhackers",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "gdpr-on-techrepublic",
+   "name": "Gdpr on TechRepublic",
+   "site": "https://www.techrepublic.com",
+   "feed": "https://www.techrepublic.com/rssfeeds/topic/gdpr",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "google-online-security-blog",
+   "name": "Google Online Security Blog",
+   "site": "http://security.googleblog.com",
+   "feed": "https://googleonlinesecurity.blogspot.com/atom.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "graham-cluley",
+   "name": "Graham Cluley",
+   "site": "https://grahamcluley.com",
+   "feed": "https://www.grahamcluley.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "hacker-combat",
+   "name": "Hacker Combat",
+   "site": "https://hackercombat.com",
+   "feed": "https://hackercombat.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "hacker-noon-cybersecurity",
+   "name": "Hacker Noon - cybersecurity",
+   "site": "https://hackernoon.com",
+   "feed": "https://hackernoon.com/tagged/cybersecurity/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "hackerone-blog",
+   "name": "HackerOne Blog",
+   "site": "https://www.hackerone.com",
+   "feed": "https://www.hackerone.com/blog.rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "hacking-news-sciencedaily",
+   "name": "Hacking News -- ScienceDaily",
+   "site": "https://www.sciencedaily.com/news/computers_math/hacking",
+   "feed": "https://www.sciencedaily.com/rss/computers_math/hacking.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "hackingvision",
+   "name": "HackingVision",
+   "site": "https://hackingvision.com",
+   "feed": "https://hackingvision.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "hackmageddon",
+   "name": "HACKMAGEDDON",
+   "site": "https://www.hackmageddon.com",
+   "feed": "https://www.hackmageddon.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "hackread-latest-cyber-crime-infosec-tech-hacking-news",
+   "name": "HackRead | Latest Cyber Crime – InfoSec- Tech – Hacking News",
+   "site": "https://www.hackread.com",
+   "feed": "https://www.hackread.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "hakin9-it-security-magazine",
+   "name": "Hakin9 –  IT Security Magazine",
+   "site": "https://hakin9.org",
+   "feed": "https://hakin9.org/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "have-i-been-pwned-latest-breaches",
+   "name": "Have I Been Pwned latest breaches",
+   "site": "https://haveibeenpwned.com",
+   "feed": "https://feeds.feedburner.com/HaveIBeenPwnedLatestBreaches",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "healthitsecurity",
+   "name": "HealthITSecurity",
+   "site": "https://healthitsecurity.com",
+   "feed": "https://healthitsecurity.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "healthtech-magazine",
+   "name": "HealthTech Magazine",
+   "site": "https://healthtechmagazine.net",
+   "feed": "https://feeds.feedburner.com/HealthTechMagazine",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "heimdal-security-blog",
+   "name": "Heimdal Security Blog",
+   "site": "https://heimdalsecurity.com/blog",
+   "feed": "https://heimdalsecurity.com/blog/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "help-net-security",
+   "name": "Help Net Security",
+   "site": "https://www.helpnetsecurity.com",
+   "feed": "https://www.helpnetsecurity.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "iacr-news",
+   "name": "IACR News",
+   "site": "https://www.iacr.org/news",
+   "feed": "https://iacr.org/news/rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "information-security-archives",
+   "name": "Information Security Archives",
+   "site": "https://danielmiessler.com/category/information-security",
+   "feed": "https://danielmiessler.com/category/information-security/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "information-security-news",
+   "name": "Information Security News",
+   "site": "https://www.reddit.com/r/InfoSecNews",
+   "feed": "https://www.reddit.com/r/InfoSecNews.json?limit=50",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "infosecurity-magazine",
+   "name": "Infosecurity Magazine",
+   "site": "https://www.infosecurity-magazine.com/news",
+   "feed": "https://www.infosecurity-magazine.com/rss/news",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "infosec-write-ups-medium",
+   "name": "InfoSec Write-ups - Medium",
+   "site": "https://infosecwriteups.com?source=rss----7b722bfd1b8d---4",
+   "feed": "https://infosecwriteups.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "itnews",
+   "name": "iTnews",
+   "site": "https://www.itnews.com.au",
+   "feed": "https://www.itnews.com.au/RSS/rss.ashx",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "itnews-asia",
+   "name": "iTnews Asia",
+   "site": "https://www.itnews.asia",
+   "feed": "https://www.itnews.asia/rss/rss.ashx",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "kitploit-pentest-tools",
+   "name": "KitPloit - PenTest Tools!",
+   "site": "http://www.kitploit.com",
+   "feed": "http://feeds.feedburner.com/PentestTools",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "krebs-on-security",
+   "name": "Krebs on Security",
+   "site": "https://krebsonsecurity.com",
+   "feed": "https://krebsonsecurity.com/feed",
+   "category": "cyber",
+   "preferred": true
+  },
+  {
+   "id": "lansweeper-it-asset-management",
+   "name": "Lansweeper IT Asset Management",
+   "site": "https://www.lansweeper.com",
+   "feed": "https://www.lansweeper.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "latest-bulletins",
+   "name": "Latest Bulletins",
+   "site": "https://aws.amazon.com/security/security-bulletins/rss",
+   "feed": "https://aws.amazon.com/security/security-bulletins/rss/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "latest-topics-for-zdnet-in-security",
+   "name": "Latest topics for ZDNet in Security",
+   "site": "https://www.zdnet.com",
+   "feed": "https://www.zdnet.com/topic/security/rss.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "let-s-encrypt",
+   "name": "Let's Encrypt",
+   "site": "https://letsencrypt.org",
+   "feed": "https://letsencrypt.org/feed.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "light-blue-touchpaper",
+   "name": "Light Blue Touchpaper",
+   "site": "https://www.lightbluetouchpaper.org",
+   "feed": "https://www.lightbluetouchpaper.org/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "linuxsecurity-com-hybrid-rss",
+   "name": "LinuxSecurity.com - Hybrid RSS",
+   "site": "https://www.linuxsecurity.com",
+   "feed": "https://linuxsecurity.com/linuxsecurity_hybrid.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "lunatrace-blog",
+   "name": "LunaTrace Blog",
+   "site": "https://www.lunasec.io/docs/blog",
+   "feed": "https://www.lunasec.io/docs/blog/rss.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "malware-analysis-infosec-resources",
+   "name": "Malware analysis – Infosec Resources",
+   "site": "https://resources.infosecinstitute.com",
+   "feed": "https://resources.infosecinstitute.com/topics/malware-analysis/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "malware-analysis-news-and-indicators-latest-topics",
+   "name": "Malware Analysis, News and Indicators - Latest topics",
+   "site": "https://malware.news/latest",
+   "feed": "https://malware.news/latest.rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "malware-analysis-reports",
+   "name": "Malware Analysis & Reports",
+   "site": "https://www.reddit.com/r/Malware",
+   "feed": "https://www.reddit.com/r/Malware.json?limit=50",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "malwarebytes-labs",
+   "name": "Malwarebytes Labs",
+   "site": "https://blog.malwarebytes.com",
+   "feed": "https://blog.malwarebytes.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "microsoft-security-blog",
+   "name": "Microsoft Security Blog",
+   "site": "https://www.microsoft.com/security/blog",
+   "feed": "https://cloudblogs.microsoft.com/microsoftsecure/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "microsoft-security-blog-2",
+   "name": "Microsoft Security Blog",
+   "site": "https://www.microsoft.com/security/blog",
+   "feed": "https://www.microsoft.com/security/blog/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "microsoft-security-response-center",
+   "name": "Microsoft Security Response Center",
+   "site": "https://msrc-blog.microsoft.com",
+   "feed": "https://msrc-blog.microsoft.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "mit-news-cybersecurity",
+   "name": "MIT News - Cybersecurity",
+   "site": "https://news.mit.edu/topic/mitcyber-security-rss.xml",
+   "feed": "https://news.mit.edu/topic/mitcyber-security-rss.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "msrc-security-update-guide",
+   "name": "MSRC Security Update Guide",
+   "site": "https://msrc.microsoft.com/update-guide",
+   "feed": "https://api.msrc.microsoft.com/update-guide/rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "naked-security",
+   "name": "Naked Security",
+   "site": "https://nakedsecurity.sophos.com",
+   "feed": "https://nakedsecurity.sophos.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "national-vulnerability-database",
+   "name": "National Vulnerability Database",
+   "site": "https://web.nvd.nist.gov/view/vuln/search",
+   "feed": "https://nvd.nist.gov/feeds/xml/cve/misc/nvd-rss-analyzed.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "ncsc-feed",
+   "name": "NCSC Feed",
+   "site": "https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml",
+   "feed": "https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "news-and-events-feed-by-topic",
+   "name": "News and Events Feed by Topic",
+   "site": "https://www.nist.gov/topics",
+   "feed": "https://www.nist.gov/news-events/cybersecurity/rss.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "new-scientist-technology",
+   "name": "New Scientist - Technology",
+   "site": "https://www.newscientist.com",
+   "feed": "https://www.newscientist.com/subject/technology/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "news-infosec-resources",
+   "name": "News – Infosec Resources",
+   "site": "https://resources.infosecinstitute.com",
+   "feed": "https://resources.infosecinstitute.com/topics/news/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "nviso-labs",
+   "name": "NVISO Labs",
+   "site": "https://blog.nviso.eu",
+   "feed": "https://blog.nviso.eu/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "objective-see-s-blog",
+   "name": "Objective-See's Blog",
+   "site": "https://www.objective-see.com",
+   "feed": "https://objective-see.org/rss.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "packet-storm",
+   "name": "Packet Storm",
+   "site": "https://packetstormsecurity.com",
+   "feed": "https://rss.packetstormsecurity.com",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "pci-perspectives",
+   "name": "PCI Perspectives",
+   "site": "https://blog.pcisecuritystandards.org",
+   "feed": "https://blog.pcisecuritystandards.org/rss.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "pen-test-partners",
+   "name": "Pen Test Partners",
+   "site": "https://www.pentestpartners.com",
+   "feed": "https://www.pentestpartners.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "phishlabs",
+   "name": "PhishLabs",
+   "site": "https://www.phishlabs.com",
+   "feed": "https://www.phishlabs.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "portswigger-blog",
+   "name": "PortSwigger Blog",
+   "site": "https://portswigger.net/blog",
+   "feed": "https://portswigger.net/blog/rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "portswigger-research",
+   "name": "PortSwigger Research",
+   "site": "https://portswigger.net/research",
+   "feed": "https://portswigger.net/research/rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "positive-security-it-security-research-and-happy-coincidences",
+   "name": "Positive Security | IT Security research and happy coincidences",
+   "site": "https://positive.security",
+   "feed": "https://positive.security/blog/rss.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "privacy-freedom-in-the-information-age",
+   "name": "Privacy & Freedom in the Information Age",
+   "site": "https://www.reddit.com/r/privacy",
+   "feed": "https://www.reddit.com/r/privacy.json?limit=50",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "product-hunt-the-best-new-products-every-day",
+   "name": "Product Hunt — The best new products, every day",
+   "site": "https://www.producthunt.com",
+   "feed": "https://www.producthunt.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "project-zero",
+   "name": "Project Zero",
+   "site": "https://googleprojectzero.blogspot.com",
+   "feed": "https://googleprojectzero.blogspot.com/feeds/posts/default?alt=rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "proofpoint-news-feed",
+   "name": "Proofpoint News Feed",
+   "site": null,
+   "feed": "https://www.proofpoint.com/us/rss.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "protos",
+   "name": "Protos",
+   "site": "https://protos.com",
+   "feed": "https://protos.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "rapid7-blog",
+   "name": "Rapid7 Blog",
+   "site": "https://blog.rapid7.com",
+   "feed": "https://blog.rapid7.com/rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "rce-security",
+   "name": "RCE Security",
+   "site": "https://www.rcesecurity.com",
+   "feed": "https://www.rcesecurity.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "real-time-communications-security-on-communication-breakdown-real-time-communications-security",
+   "name": "Real-time communications security on Communication Breakdown - Real-Time Communications Security",
+   "site": "https://www.rtcsec.com",
+   "feed": "https://www.rtcsec.com/index.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "rekt",
+   "name": "Rekt",
+   "site": "https://www.rekt.news",
+   "feed": "https://rekt.news/rss/feed.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "rest-of-world",
+   "name": "Rest of World -",
+   "site": "https://restofworld.org",
+   "feed": "https://restofworld.org/feed/latest",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "restoreprivacy",
+   "name": "RestorePrivacy",
+   "site": "https://restoreprivacy.com",
+   "feed": "https://restoreprivacy.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "reverse-engineering",
+   "name": "Reverse Engineering",
+   "site": "https://www.reddit.com/r/ReverseEngineering",
+   "feed": "https://www.reddit.com/r/ReverseEngineering.json?limit=50",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "reversinglabs-blog",
+   "name": "ReversingLabs Blog",
+   "site": "https://blog.reversinglabs.com/blog",
+   "feed": "https://blog.reversinglabs.com/blog/rss.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "risky-business",
+   "name": "Risky Business",
+   "site": "https://risky.biz",
+   "feed": "https://risky.biz/feeds/risky-business",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "r-netsec-information-security-news-discussion",
+   "name": "/r/netsec - Information Security News & Discussion",
+   "site": "https://www.reddit.com/r/netsec",
+   "feed": "https://www.reddit.com/r/netsec.json?limit=50",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "sans-blog",
+   "name": "SANS Blog",
+   "site": "https://www.sans.org/blog",
+   "feed": "https://www.sans.org/blog/feed.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "schneier-on-security",
+   "name": "Schneier on Security",
+   "site": "https://www.schneier.com",
+   "feed": "https://www.schneier.com/feed/atom",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "sc-magazine-feed-for-policy",
+   "name": "SC Magazine feed for Policy",
+   "site": "https://www.scmagazine.com/topic/policy",
+   "feed": "https://www.scmagazine.com/feed/topic/policy",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "sc-magazine-feed-for-risk-management",
+   "name": "SC Magazine feed for Risk Management",
+   "site": "https://www.scmagazine.com/topic/risk-management",
+   "feed": "https://www.scmagazine.com/feed/topic/risk-management",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "sc-magazine-feed-for-strategy",
+   "name": "SC Magazine feed for Strategy",
+   "site": "https://www.scmagazine.com/topic/strategy",
+   "feed": "https://www.scmagazine.com/feed/topic/strategy",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "sc-magazine-feed-for-threats",
+   "name": "SC Magazine feed for Threats",
+   "site": "https://www.scmagazine.com/topic/threats",
+   "feed": "https://www.scmagazine.com/feed/topic/threats",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "secjuice",
+   "name": "Secjuice",
+   "site": "https://www.secjuice.com",
+   "feed": "https://www.secjuice.com/rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "secure-insights",
+   "name": "Secure Insights",
+   "site": "https://www.axis.com/blog/secure-insights",
+   "feed": "https://www.axis.com/blog/secure-insights/?feed=rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "security-affairs",
+   "name": "Security Affairs",
+   "site": "https://securityaffairs.co/wordpress",
+   "feed": "http://securityaffairs.co/wordpress/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "security-ars-technica",
+   "name": "security – Ars Technica",
+   "site": "https://arstechnica.com",
+   "feed": "https://arstechnica.com/tag/security/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "security-boulevard",
+   "name": "Security Boulevard",
+   "site": "https://securityboulevard.com",
+   "feed": "https://securityboulevard.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "security-cisco-blogs",
+   "name": "Security – Cisco Blogs",
+   "site": "https://blogs.cisco.com",
+   "feed": "https://blogs.cisco.com/security/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "security-intelligence",
+   "name": "Security Intelligence",
+   "site": "https://securityintelligence.com",
+   "feed": "https://securityintelligence.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "security-latest",
+   "name": "Security Latest",
+   "site": "https://www.wired.com/category/security/latest",
+   "feed": "https://www.wired.com/feed/category/security/latest/rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "security-on-techrepublic",
+   "name": "Security on TechRepublic",
+   "site": "https://www.techrepublic.com",
+   "feed": "https://www.techrepublic.com/rssfeeds/topic/security",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "security-resources-and-information-from-techtarget",
+   "name": "Security Resources and Information from TechTarget",
+   "site": "https://www.techtarget.com/searchsecurity",
+   "feed": "https://www.techtarget.com/searchsecurity/rss/Security-Wire-Daily-News.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "security-siliconangle",
+   "name": "Security – SiliconANGLE",
+   "site": "https://siliconangle.com",
+   "feed": "https://siliconangle.com/category/security/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "security-software-news-and-updates",
+   "name": "Security Software news and updates",
+   "site": "https://www.ghacks.net",
+   "feed": "https://www.ghacks.net/category/software/security/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "security-venturebeat",
+   "name": "Security – VentureBeat",
+   "site": "https://venturebeat.com",
+   "feed": "https://venturebeat.com/category/security/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "securityweek-rss-feed",
+   "name": "SecurityWeek RSS Feed",
+   "site": "https://www.securityweek.com",
+   "feed": "https://feeds.feedburner.com/securityweek",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "shellsharks",
+   "name": "shellsharks",
+   "site": "https://shellsharks.com",
+   "feed": "https://shellsharks.github.io/feed.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "siemens-productcert-security-advisories",
+   "name": "Siemens ProductCERT Security Advisories",
+   "site": "https://cert-portal.siemens.com/productcert/rss/advisories.atom",
+   "feed": "https://cert-portal.siemens.com/productcert/rss/advisories.atom",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "signal-blog",
+   "name": "Signal Blog",
+   "site": "https://signal.org/blog",
+   "feed": "https://signal.org/blog/rss.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "silicon-republicinfosec-silicon-republic",
+   "name": "Silicon Republicinfosec – Silicon Republic",
+   "site": "https://www.siliconrepublic.com",
+   "feed": "https://www.siliconrepublic.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "sonatype-blog",
+   "name": "Sonatype Blog",
+   "site": "https://blog.sonatype.com",
+   "feed": "https://blog.sonatype.com/rss.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "spiderlabs-blog-from-trustwave",
+   "name": "SpiderLabs Blog from Trustwave",
+   "site": "https://www.trustwave.com/en-us",
+   "feed": "https://www.trustwave.com/en-us/rss/spiderlabs-blog",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "strategy-of-security",
+   "name": "Strategy of Security",
+   "site": "https://strategyofsecurity.com",
+   "feed": "https://strategyofsecurity.com/rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "sucuri-blog",
+   "name": "Sucuri Blog",
+   "site": "https://blog.sucuri.net",
+   "feed": "https://blog.sucuri.net/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "sysdig-secure-sysdig",
+   "name": "Sysdig Secure – Sysdig",
+   "site": "https://sysdig.com",
+   "feed": "https://sysdig.com/blog/category/sysdig-secure2/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "techcrunch",
+   "name": "TechCrunch",
+   "site": "https://techcrunch.com",
+   "feed": "https://techcrunch.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "technology-reuters-news-agency",
+   "name": "Technology | Reuters News Agency",
+   "site": "https://www.reutersagency.com/en",
+   "feed": "https://www.reutersagency.com/feed/?best-topics=tech",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "tech-xplore-security-news",
+   "name": "Tech Xplore - Security News",
+   "site": "https://techxplore.com/security-news",
+   "feed": "https://techxplore.com/rss-feed/security-news",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "tenable-techblog-medium",
+   "name": "Tenable TechBlog - Medium",
+   "site": "https://medium.com/tenable-techblog?source=rss----68728ef06732---4",
+   "feed": "https://medium.com/feed/tenable-techblog",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "the-citizen-lab",
+   "name": "The Citizen Lab",
+   "site": "https://citizenlab.ca",
+   "feed": "https://citizenlab.ca/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "the-cloudflare-blog",
+   "name": "The Cloudflare Blog",
+   "site": "https://blog.cloudflare.com",
+   "feed": "http://blog.cloudflare.com/rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "the-daily-swig-cybersecurity-news-and-views",
+   "name": "The Daily Swig | Cybersecurity news and views",
+   "site": "https://portswigger.net/daily-swig",
+   "feed": "https://portswigger.net/daily-swig/rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "the-hacker-news",
+   "name": "The Hacker News",
+   "site": "https://thehackernews.com",
+   "feed": "https://feeds.feedburner.com/TheHackersNews",
+   "category": "cyber",
+   "preferred": true
+  },
+  {
+   "id": "the-last-watchdog",
+   "name": "The Last Watchdog",
+   "site": "https://www.lastwatchdog.com",
+   "feed": "https://www.lastwatchdog.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "the-open-cloud-vulnerability-security-issue-database",
+   "name": "The Open Cloud Vulnerability & Security Issue Database",
+   "site": "https://www.cloudvulndb.org",
+   "feed": "https://www.cloudvulndb.org/rss/feed.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "the-record-by-recorded-future",
+   "name": "The Record by Recorded Future",
+   "site": "https://therecord.media",
+   "feed": "https://therecord.media/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "the-red-canary-blog-information-security-insights",
+   "name": "The Red Canary Blog: Information Security Insights",
+   "site": "https://redcanary.com/blog",
+   "feed": "https://redcanary.com/blog/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "the-register-security",
+   "name": "The Register - Security",
+   "site": "https://www.theregister.com/security",
+   "feed": "https://www.theregister.com/security/headlines.atom",
+   "category": "cyber",
+   "preferred": true
+  },
+  {
+   "id": "the-risks-digest",
+   "name": "The RISKS Digest",
+   "site": "https://catless.ncl.ac.uk/Risks",
+   "feed": "https://catless.ncl.ac.uk/risksrss2.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "the-salty-hash-medium",
+   "name": "The Salty Hash - Medium",
+   "site": "https://blog.ironcorelabs.com?source=rss----424d9e2d3917---4",
+   "feed": "https://blog.ironcorelabs.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "the-state-of-security",
+   "name": "The State of Security",
+   "site": "https://www.tripwire.com/state-of-security",
+   "feed": "https://www.tripwire.com/state-of-security/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "the-verge-all-posts",
+   "name": "The Verge -  All Posts",
+   "site": "https://www.theverge.com",
+   "feed": "https://www.theverge.com/rss/index.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "threat-analysis-group-tag",
+   "name": "Threat Analysis Group (TAG)",
+   "site": "https://blog.google/threat-analysis-group",
+   "feed": "https://blog.google/threat-analysis-group/rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "threatpost",
+   "name": "Threatpost",
+   "site": "https://threatpost.com",
+   "feed": "https://threatpost.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "threat-research-blog",
+   "name": "Threat Research Blog",
+   "site": "http://www.fireeye.com/blog/threat-research.html",
+   "feed": "https://www.fireeye.com/blog/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "tl-dr-sec",
+   "name": "tl;dr sec",
+   "site": "https://tldrsec.com",
+   "feed": "https://tldrsec.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "trail-of-bits-blog",
+   "name": "Trail of Bits Blog",
+   "site": "https://blog.trailofbits.com",
+   "feed": "https://blog.trailofbits.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "trend-micro-simply-security",
+   "name": "Trend Micro Simply Security",
+   "site": "http://www.rssmix.com",
+   "feed": "http://feeds.trendmicro.com/TrendMicroSimplySecurity",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "troy-hunt-s-blog",
+   "name": "Troy Hunt's Blog",
+   "site": "https://www.troyhunt.com",
+   "feed": "https://feeds.feedburner.com/TroyHunt",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "trustedsec",
+   "name": "TrustedSec",
+   "site": "https://www.trustedsec.com",
+   "feed": "http://www.trustedsec.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "ubuntu-security-notices",
+   "name": "Ubuntu security notices",
+   "site": "https://ubuntu.com/security/notices/rss.xml",
+   "feed": "https://ubuntu.com/security/notices/rss.xml",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "unit42",
+   "name": "Unit42",
+   "site": "https://unit42.paloaltonetworks.com",
+   "feed": "https://unit42.paloaltonetworks.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "vice-us-hacking",
+   "name": "VICE US - HACKING",
+   "site": "https://www.vice.com/en/topic/hacking",
+   "feed": "https://www.vice.com/en/rss/topic/hacking",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "welivesecurity",
+   "name": "WeLiveSecurity",
+   "site": "https://www.welivesecurity.com",
+   "feed": "http://feeds.feedburner.com/eset/blog",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "wesecureapp-simplifying-enterprise-security",
+   "name": "WeSecureApp :: Simplifying Enterprise Security!",
+   "site": "https://wesecureapp.com",
+   "feed": "https://wesecureapp.com/feed",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "zero-day-initiative-blog",
+   "name": "Zero Day Initiative - Blog",
+   "site": "https://www.zerodayinitiative.com/blog",
+   "feed": "https://www.zerodayinitiative.com/blog?format=rss",
+   "category": "cyber",
+   "preferred": false
+  },
+  {
+   "id": "openai-news",
+   "name": "OpenAI News",
+   "site": "https://openai.com/news",
+   "feed": "https://openai.com/news/rss.xml",
+   "category": "ai",
+   "preferred": false
+  },
+  {
+   "id": "google-deepmind-blog",
+   "name": "Google DeepMind Blog",
+   "site": "https://deepmind.google/discover/blog",
+   "feed": "https://deepmind.google/blog/rss.xml",
+   "category": "ai",
+   "preferred": false
+  },
+  {
+   "id": "google-ai-the-keyword",
+   "name": "Google AI (The Keyword)",
+   "site": "https://blog.google/technology/ai",
+   "feed": "https://blog.google/technology/ai/rss/",
+   "category": "ai",
+   "preferred": false
+  },
+  {
+   "id": "hugging-face-blog",
+   "name": "Hugging Face Blog",
+   "site": "https://huggingface.co/blog",
+   "feed": "https://huggingface.co/blog/feed.xml",
+   "category": "ai",
+   "preferred": false
+  },
+  {
+   "id": "mit-technology-review-ai",
+   "name": "MIT Technology Review AI",
+   "site": "https://www.technologyreview.com/topic/artificial-intelligence",
+   "feed": "https://www.technologyreview.com/topic/artificial-intelligence/feed",
+   "category": "ai",
+   "preferred": false
+  },
+  {
+   "id": "the-verge-ai",
+   "name": "The Verge AI",
+   "site": "https://www.theverge.com/ai-artificial-intelligence",
+   "feed": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
+   "category": "ai",
+   "preferred": false
+  },
+  {
+   "id": "techcrunch-ai",
+   "name": "TechCrunch AI",
+   "site": "https://techcrunch.com/category/artificial-intelligence",
+   "feed": "https://techcrunch.com/category/artificial-intelligence/feed/",
+   "category": "ai",
+   "preferred": false
+  },
+  {
+   "id": "venturebeat-ai",
+   "name": "VentureBeat AI",
+   "site": "https://venturebeat.com/category/ai",
+   "feed": "https://venturebeat.com/category/ai/feed/",
+   "category": "ai",
+   "preferred": false
+  },
+  {
+   "id": "wired-ai",
+   "name": "Wired AI",
+   "site": "https://www.wired.com/tag/artificial-intelligence",
+   "feed": "https://www.wired.com/feed/tag/ai/latest/rss",
+   "category": "ai",
+   "preferred": false
+  },
+  {
+   "id": "ars-technica-ai",
+   "name": "Ars Technica AI",
+   "site": "https://arstechnica.com/ai",
+   "feed": "https://arstechnica.com/ai/feed/",
+   "category": "ai",
+   "preferred": false
+  },
+  {
+   "id": "the-register-ai-ml",
+   "name": "The Register AI/ML",
+   "site": "https://www.theregister.com/software/ai_ml",
+   "feed": "https://www.theregister.com/software/ai_ml/headlines.atom",
+   "category": "ai",
+   "preferred": true
+  },
+  {
+   "id": "import-ai-jack-clark",
+   "name": "Import AI (Jack Clark)",
+   "site": "https://importai.substack.com",
+   "feed": "https://importai.substack.com/feed",
+   "category": "ai",
+   "preferred": false
+  },
+  {
+   "id": "simon-willison-s-weblog",
+   "name": "Simon Willison's Weblog",
+   "site": "https://simonwillison.net",
+   "feed": "https://simonwillison.net/atom/everything/",
+   "category": "ai",
+   "preferred": false
+  }
+ ]
+}
