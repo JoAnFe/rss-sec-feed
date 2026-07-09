@@ -38,7 +38,8 @@
    "site": "https://www.anomali.com/blog",
    "feed": "https://www.anomali.com/site/blog-rss",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "api-security-news",
@@ -62,7 +63,8 @@
    "site": "https://asec.ahnlab.com/en",
    "feed": "https://asec.ahnlab.com/en/feed",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "australian-information-security-awareness-and-advisory",
@@ -78,7 +80,8 @@
    "site": "https://decoded.avast.io",
    "feed": "https://decoded.avast.io/feed",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "aws-threat-research-team-aws-security-blog",
@@ -86,7 +89,8 @@
    "site": "https://aws.amazon.com/blogs/security",
    "feed": "https://aws.amazon.com/blogs/security/tag/aws-threat-research-team/feed",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "big-data-on-techrepublic",
@@ -110,7 +114,8 @@
    "site": "https://www.bitdefender.com/blog/labs",
    "feed": "https://www.bitdefender.com/blog/api/rss/labs",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "bleepingcomputer",
@@ -142,7 +147,8 @@
    "site": "https://www.crowdstrike.com",
    "feed": "https://www.crowdstrike.com/blog/feed",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "blog-praetorian",
@@ -190,7 +196,8 @@
    "site": "https://www.cisecurity.org",
    "feed": "https://www.cisecurity.org/feed/advisories",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "cert-recently-published-vulnerability-notes",
@@ -198,7 +205,8 @@
    "site": "https://kb.cert.org/vuls",
    "feed": "https://www.kb.cert.org/vulfeed",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "check-point-research",
@@ -206,7 +214,8 @@
    "site": "https://research.checkpoint.com",
    "feed": "https://research.checkpoint.com/feed",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "cisco-newsroom-security",
@@ -222,7 +231,8 @@
    "site": "http://blog.talosintelligence.com",
    "feed": "https://feeds.feedburner.com/feedburner/Talos",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "claroty-team82",
@@ -230,7 +240,8 @@
    "site": "https://claroty.com/blog",
    "feed": "https://claroty.com/feed/",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "clamav-blog",
@@ -254,7 +265,8 @@
    "site": "https://cofense.com",
    "feed": "https://cofense.com/feed",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "compass-security-blog",
@@ -430,7 +442,8 @@
    "site": "https://securitylabs.datadoghq.com",
    "feed": "https://securitylabs.datadoghq.com/rss/feed.xml",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "dcd",
@@ -446,7 +459,8 @@
    "site": "https://www.dragos.com/blog/",
    "feed": "https://www.dragos.com/feed/",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "deeplinks",
@@ -486,7 +500,8 @@
    "site": "https://www.digitalshadows.com",
    "feed": "https://www.digitalshadows.com/blog-and-research/feed",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "discussion-and-disclosure-of-web-vulnerabilities",
@@ -566,7 +581,8 @@
    "site": "https://fortiguard.fortinet.com/rss/ir.xml",
    "feed": "https://filestore.fortinet.com/fortiguard/rss/ir.xml",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "fortiguard-labs-fortiguard-center-threat-signal-report",
@@ -574,7 +590,8 @@
    "site": "https://fortiguard.fortinet.com/rss/threatsignal.xml",
    "feed": "https://filestore.fortinet.com/fortiguard/rss/threatsignal.xml",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "gbhackers-on-security",
@@ -718,7 +735,8 @@
    "site": "https://www.huntress.com/blog",
    "feed": "https://www.huntress.com/blog/rss.xml",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "iacr-news",
@@ -790,7 +808,8 @@
    "site": "https://securelist.com",
    "feed": "https://securelist.com/feed/",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "krebs-on-security",
@@ -870,7 +889,8 @@
    "site": "https://malware.news/latest",
    "feed": "https://malware.news/latest.rss",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "malware-analysis-reports",
@@ -886,7 +906,8 @@
    "site": "https://blog.malwarebytes.com",
    "feed": "https://blog.malwarebytes.com/feed",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "mandiant-blog",
@@ -894,7 +915,8 @@
    "site": "https://www.mandiant.com/resources/blog",
    "feed": "https://feeds.feedburner.com/Mandiant",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "microsoft-security-blog",
@@ -902,7 +924,8 @@
    "site": "https://www.microsoft.com/security/blog",
    "feed": "https://cloudblogs.microsoft.com/microsoftsecure/feed",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "microsoft-security-blog-2",
@@ -910,7 +933,8 @@
    "site": "https://www.microsoft.com/security/blog",
    "feed": "https://www.microsoft.com/security/blog/feed",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "microsoft-security-response-center",
@@ -958,7 +982,8 @@
    "site": "https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml",
    "feed": "https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "news-and-events-feed-by-topic",
@@ -998,7 +1023,8 @@
    "site": "https://www.nozominetworks.com/blog",
    "feed": "https://www.nozominetworks.com/feed/",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "objective-see-s-blog",
@@ -1038,7 +1064,8 @@
    "site": "https://www.phishlabs.com",
    "feed": "https://www.phishlabs.com/feed",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "portswigger-blog",
@@ -1166,7 +1193,8 @@
    "site": "https://blog.reversinglabs.com/blog",
    "feed": "https://blog.reversinglabs.com/blog/rss.xml",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "risky-business",
@@ -1198,7 +1226,8 @@
    "site": "https://isc.sans.edu",
    "feed": "https://isc.sans.edu/rssfeed.xml",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "schneier-on-security",
@@ -1262,7 +1291,8 @@
    "site": "https://www.sentinelone.com/labs",
    "feed": "https://www.sentinelone.com/labs/feed/",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "security-affairs",
@@ -1302,7 +1332,8 @@
    "site": "https://securityintelligence.com",
    "feed": "https://securityintelligence.com/feed",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "security-latest",
@@ -1406,7 +1437,8 @@
    "site": "https://www.trustwave.com/en-us",
    "feed": "https://www.trustwave.com/en-us/rss/spiderlabs-blog",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "strategy-of-security",
@@ -1526,7 +1558,8 @@
    "site": "https://redcanary.com/blog",
    "feed": "https://redcanary.com/blog/feed",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "the-register-security",
@@ -1574,7 +1607,8 @@
    "site": "https://blog.google/threat-analysis-group",
    "feed": "https://blog.google/threat-analysis-group/rss",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "threatpost",
@@ -1590,7 +1624,8 @@
    "site": "http://www.fireeye.com/blog/threat-research.html",
    "feed": "https://www.fireeye.com/blog/feed",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "tl-dr-sec",
@@ -1646,7 +1681,8 @@
    "site": "https://unit42.paloaltonetworks.com",
    "feed": "https://unit42.paloaltonetworks.com/feed",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "vice-us-hacking",
@@ -1662,7 +1698,8 @@
    "site": "https://www.volexity.com/blog",
    "feed": "https://www.volexity.com/blog/feed/",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "welivesecurity",
@@ -1670,7 +1707,8 @@
    "site": "https://www.welivesecurity.com",
    "feed": "http://feeds.feedburner.com/eset/blog",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "wesecureapp-simplifying-enterprise-security",
@@ -1686,7 +1724,8 @@
    "site": "https://www.wiz.io/blog/category/research",
    "feed": "https://www.wiz.io/feed/rss.xml",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "zero-day-initiative-blog",
@@ -1694,7 +1733,8 @@
    "site": "https://www.zerodayinitiative.com/blog",
    "feed": "https://www.zerodayinitiative.com/blog?format=rss",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "zscaler-threatlabz",
@@ -1702,7 +1742,8 @@
    "site": "https://www.zscaler.com/blogs/security-research",
    "feed": "https://www.zscaler.com/blogs/security-research/rss.xml",
    "category": "cyber",
-   "preferred": false
+   "preferred": false,
+   "group": "threat-intel"
   },
   {
    "id": "openai-news",

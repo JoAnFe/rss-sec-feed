@@ -14,9 +14,13 @@ Options: `--port`, `--host`, `--interval`, `--workers`, `--verbose` (see `python
 
 ## What it does
 
-- Aggregates **215 RSS/Atom feeds**: 202 cybersecurity sources plus 13 curated frontier-AI feeds (OpenAI, DeepMind, Google AI, Hugging Face, MIT Tech Review AI, etc.).
+- Aggregates **227 RSS/Atom feeds**: 213 cybersecurity sources plus 14 curated frontier-AI feeds (OpenAI, DeepMind, Google AI, Hugging Face, MIT Tech Review AI, etc.).
+- **Breaking News** frontpage section: recent stories reported by multiple sources are clustered by title similarity and shared CVE ids, scored by cross-source coverage + recency + preferred boost, and pinned at the top of the All tab (heuristic only — no LLM).
 - **Preferred sources** (BleepingComputer, The Hacker News, Dark Reading, Krebs on Security, The Register) are starred and boosted in the default "Top" sort; "Newest" is pure chronological.
-- Tabs for **All / Cybersecurity / Frontier AI** — AI-related stories from cyber outlets are cross-tagged by keyword.
+- Tabs for **All / Cybersecurity / Frontier AI / Exploited CVEs / Threat Intel**:
+  - AI-related stories from cyber outlets are cross-tagged by keyword.
+  - **Exploited CVEs** — items mentioning a CVE are tagged (`CVE-YYYY-NNNN` regex) and cross-referenced against the [CISA KEV catalog](https://www.cisa.gov/known-exploited-vulnerabilities-catalog) (refetched every 6h, cached in `data/kev.json`, failure-tolerant), plus "actively exploited / in the wild / zero-day" keyword signals.
+  - **Threat Intel** — 41 research/TI sources tagged `"group": "threat-intel"` in `sources.json` (Talos, Unit 42, ZDI, Google TAG, Securelist, SANS ISC, …) plus content-keyword tagging so TI stories from general outlets also match.
 - Search, per-source on/off toggles, and a source-health panel (dead feeds are marked, never fatal).
 - Handles RSS 2.0, Atom, and RSS 1.0/RDF; keeps stale items when a feed temporarily fails; warm-starts from an on-disk cache (`data/`, gitignored).
 

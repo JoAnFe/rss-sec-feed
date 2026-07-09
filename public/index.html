@@ -9,14 +9,14 @@
     --bg:#0a0e14; --bg2:#0f141d; --card:#111722; --card2:#151d2a;
     --line:#1e2735; --text:#e6edf3; --muted:#8b98a9; --faint:#5b6879;
     --cyber:#22d3ee; --ai:#a78bfa; --gold:#f5c542; --ok:#34d399; --bad:#f87171;
-    --accent:#38bdf8;
+    --accent:#38bdf8; --exploit:#fb7185; --intel:#34d399;
   }
   @media (prefers-color-scheme: light){
     :root{
       --bg:#f4f6f9; --bg2:#eef1f6; --card:#ffffff; --card2:#f7f9fc;
       --line:#dde3ec; --text:#111827; --muted:#5b6675; --faint:#93a0b1;
       --cyber:#0891b2; --ai:#7c3aed; --gold:#b8860b; --ok:#059669; --bad:#dc2626;
-      --accent:#0284c7;
+      --accent:#0284c7; --exploit:#dc2626; --intel:#059669;
     }
   }
   *{box-sizing:border-box}
@@ -72,6 +72,17 @@
 
   main{padding:14px 0 60px}
   .note{font-size:12.5px;color:var(--muted);padding:2px 2px 10px}
+  #hero{margin-bottom:16px}
+  .hero-head{display:flex;align-items:baseline;gap:8px;font-size:11px;font-weight:700;
+    letter-spacing:1px;color:var(--muted);text-transform:uppercase;padding:2px 2px 8px}
+  .hero-head .dot{display:inline-block;width:7px;height:7px;border-radius:50%;
+    background:var(--bad);align-self:center;animation:pulse 2s infinite}
+  @keyframes pulse{50%{opacity:.3}}
+  .hero-sub{font-weight:500;letter-spacing:.2px;text-transform:none;color:var(--faint)}
+  .hero-card{border-left:3px solid var(--accent)}
+  .hero-card .title{font-size:16px}
+  .hero-srcs{color:var(--gold);font-weight:700}
+  .hero-also{color:var(--faint)}
   .item{
     display:flex; gap:12px; padding:13px 14px; margin-bottom:8px;
     background:var(--card); border:1px solid var(--line); border-radius:12px;
@@ -91,6 +102,9 @@
   .badge.cyber{color:var(--cyber);background:color-mix(in srgb, var(--cyber) 14%, transparent)}
   .badge.ai{color:var(--ai);background:color-mix(in srgb, var(--ai) 14%, transparent)}
   .badge.xai{color:var(--ai);background:transparent;box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--ai) 50%, transparent)}
+  .badge.exploit{color:var(--exploit);background:color-mix(in srgb, var(--exploit) 14%, transparent)}
+  .badge.cve{color:var(--accent);background:color-mix(in srgb, var(--accent) 14%, transparent)}
+  .badge.intel{color:var(--intel);background:color-mix(in srgb, var(--intel) 14%, transparent)}
   .time{color:var(--faint)}
   .sum{margin-top:5px;font-size:13px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .skel{height:74px;border-radius:12px;margin-bottom:8px;border:1px solid var(--line);
@@ -165,6 +179,8 @@
         <button data-tab="all" class="on">All</button>
         <button data-tab="cyber"><span class="dot" style="background:var(--cyber)"></span>Cybersecurity</button>
         <button data-tab="ai"><span class="dot" style="background:var(--ai)"></span>Frontier AI</button>
+        <button data-tab="exploited"><span class="dot" style="background:var(--exploit)"></span>Exploited CVEs</button>
+        <button data-tab="intel"><span class="dot" style="background:var(--intel)"></span>Threat Intel</button>
       </div>
       <input id="search" type="search" placeholder="Search headlines…  ( / )" autocomplete="off">
       <select id="sort" title="Sort order">
@@ -178,6 +194,11 @@
 </header>
 
 <div class="wrap"><main>
+  <section id="hero" hidden>
+    <div class="hero-head"><span class="dot"></span>Breaking News
+      <span class="hero-sub">multi-source stories · last 48h</span></div>
+    <div id="heroList"></div>
+  </section>
   <div class="note" id="note" hidden></div>
   <div id="feed"></div>
   <button id="moreBtn" hidden>Load more</button>
@@ -249,6 +270,23 @@ function favicon(item) {
 }
 
 /* ---------- rendering ---------- */
+function topicBadges(meta, item) {
+  const tps = item.topics || [], cves = item.cves || [];
+  if (item.category !== "ai" && tps.includes("ai"))
+    meta.appendChild(el("span", "badge xai", "AI"));
+  if (tps.includes("exploited")) {
+    const b = el("span", "badge exploit", "EXPLOITED");
+    if (cves.length) b.title = cves.join(", ");
+    meta.appendChild(b);
+  } else if (cves.length) {
+    const b = el("span", "badge cve",
+      cves[0] + (cves.length > 1 ? " +" + (cves.length - 1) : ""));
+    b.title = cves.join(", ");
+    meta.appendChild(b);
+  }
+  if (tps.includes("threatintel")) meta.appendChild(el("span", "badge intel", "INTEL"));
+}
+
 function row(item) {
   const it = el("article", "item");
   it.appendChild(favicon(item));
@@ -265,8 +303,7 @@ function row(item) {
   meta.appendChild(el("span", "src", item.source_name));
   meta.appendChild(el("span", "badge " + (item.category === "ai" ? "ai" : "cyber"),
     item.category === "ai" ? "AI" : "CYBER"));
-  if (item.category !== "ai" && item.topics.includes("ai"))
-    meta.appendChild(el("span", "badge xai", "AI"));
+  topicBadges(meta, item);
   const t = el("span", "time", timeago(item.ts, item.guessed));
   if (item.guessed) t.title = "Feed gave no publish date — time first seen";
   meta.appendChild(t);
@@ -275,6 +312,53 @@ function row(item) {
   if (item.summary) body.appendChild(el("div", "sum", item.summary));
   it.appendChild(body);
   return it;
+}
+
+function heroCard(item) {
+  const card = el("article", "item hero-card");
+  card.appendChild(favicon(item));
+  const body = el("div", "body");
+
+  const title = el("div", "title");
+  const a = el("a", null, item.title);
+  a.href = item.link; a.target = "_blank"; a.rel = "noopener noreferrer";
+  title.appendChild(a);
+  body.appendChild(title);
+
+  const meta = el("div", "meta");
+  if (item.preferred) meta.appendChild(el("span", "star", "★"));
+  meta.appendChild(el("span", "src", item.source_name));
+  if (item.sources_count > 1) {
+    meta.appendChild(el("span", "hero-srcs", item.sources_count + " sources"));
+    if (item.other_sources && item.other_sources.length)
+      meta.appendChild(el("span", "hero-also",
+        "also on " + item.other_sources.join(", ")));
+  }
+  topicBadges(meta, item);
+  meta.appendChild(el("span", "time", timeago(item.ts, item.guessed)));
+  body.appendChild(meta);
+
+  if (item.summary) body.appendChild(el("div", "sum", item.summary));
+  card.appendChild(body);
+  return card;
+}
+
+function renderHero(list) {
+  const box = $("heroList");
+  box.textContent = "";
+  for (const it of list) box.appendChild(heroCard(it));
+  $("hero").hidden = !list.length;
+}
+
+async function loadBreaking() {
+  // the hero fronts the unfiltered view only — other tabs/search are focused modes
+  if (state.tab !== "all" || state.q) { $("hero").hidden = true; return; }
+  try {
+    const p = new URLSearchParams();
+    if (state.disabled.size) p.set("exclude", [...state.disabled].join(","));
+    const d = await (await fetch("/api/breaking?" + p)).json();
+    renderHero(d.breaking || []);
+  } catch { $("hero").hidden = true; }
 }
 
 function skeletons(n) {
@@ -328,7 +412,10 @@ function itemsURL() {
 let reqSeq = 0;
 async function loadItems(append) {
   const seq = ++reqSeq;
-  if (!append) state.offset = 0;
+  if (!append) {
+    state.offset = 0;
+    loadBreaking();  // fire-and-forget; hero follows the same lifecycle
+  }
   try {
     const d = await (await fetch(itemsURL())).json();
     if (seq !== reqSeq) return;            // stale response

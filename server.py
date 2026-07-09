@@ -57,6 +57,41 @@ AI_TOPIC_RE = re.compile(
     re.IGNORECASE,
 )
 
+CVE_RE = re.compile(r"\bCVE-\d{4}-\d{4,}\b", re.IGNORECASE)
+
+EXPLOIT_HINT_RE = re.compile(
+    r"\b(actively exploited|exploited in the wild|exploitation in the wild|"
+    r"under active exploitation|mass exploitation|exploitation observed|"
+    r"zero-?day|0-?day)\b",
+    re.IGNORECASE,
+)
+
+THREAT_INTEL_RE = re.compile(
+    r"\b(threat actor\w*|apt[- ]?\d+|ta\d{3,4}|unc\d{3,5}|lazarus|iocs?|"
+    r"indicators of compromise|ttps\b|c2 server\w*|command[- ]and[- ]control|"
+    r"malware campaign\w*|ransomware (gang|group|operation)\w*|nation[- ]state|"
+    r"cyber ?espionage|threat intel\w*|threat hunting|mitre att&ck)\b",
+    re.IGNORECASE,
+)
+
+KEV_URL = ("https://www.cisa.gov/sites/default/files/feeds/"
+           "known_exploited_vulnerabilities.json")
+KEV_REFRESH_SECONDS = 6 * 3600  # refetch the KEV catalog at most every 6h
+
+BREAKING_WINDOW_SECONDS = 48 * 3600
+BREAKING_MAX = 5
+BREAKING_MIN_SOURCES = 2   # a cluster needs this many distinct sources to lead
+BREAKING_POOL_MAX = 2000   # newest in-window items considered for clustering
+SIM_MIN_OVERLAP = 3        # shared title tokens required to join a cluster
+SIM_THRESHOLD = 0.6        # overlap coefficient threshold
+CVE_JOIN_MAX = 3           # CVE-based joining only for items this focused
+STOPWORDS = frozenset(
+    """a an and are as at be by for from has have how in is it its new of on or
+    over than that the this to via vs was what when why will with you your
+    after more say says said report reports researchers hackers attackers
+    security update patch patches now could may 2024 2025 2026""".split()
+)
+
 CONTENT_TYPES = {
     ".html": "text/html; charset=utf-8",
     ".js": "text/javascript; charset=utf-8",
@@ -73,6 +108,8 @@ STATE_LOCK = threading.Lock()
 SOURCES = {}          # id -> source dict from sources.json
 FEED_STATE = {}       # id -> {status, error, last_ok, fetched_at, items: [...]}
 REFRESH = {"running": False, "done": 0, "total": 0, "started": 0.0, "finished": 0.0}
+KEV = {"cves": set(), "fetched_at": 0.0}       # CVE ids in the CISA KEV catalog
+BREAKING = {"clusters": [], "computed_at": 0.0}
 WAKE = threading.Event()
 ARGS = None
 
@@ -257,6 +294,13 @@ def normalize(src, raw, old_by_id):
             ts = dt.timestamp()
         blob = f"{r['title']} {r['summary']}"
         topics = ["ai"] if AI_TOPIC_RE.search(blob) else []
+        cves = sorted({m.upper() for m in CVE_RE.findall(blob)})
+        if cves:
+            topics.append("cve")
+        if (cves or src["category"] == "cyber") and EXPLOIT_HINT_RE.search(blob):
+            topics.append("exploited")  # keyword signal; KEV checked at query time
+        if THREAT_INTEL_RE.search(blob):
+            topics.append("threatintel")  # content signal; source group checked at query time
         out.append({
             "id": iid,
             "title": r["title"],
@@ -265,6 +309,7 @@ def normalize(src, raw, old_by_id):
             "guessed": guessed,
             "summary": r["summary"],
             "topics": topics,
+            "cves": cves,
         })
     return out
 
@@ -297,6 +342,7 @@ def refresh_source(src):
 
 
 def refresh_all():
+    refresh_kev()
     srcs = list(SOURCES.values())
     with STATE_LOCK:
         REFRESH.update(running=True, done=0, total=len(srcs), started=time.time())
@@ -314,6 +360,10 @@ def refresh_all():
         ok = sum(1 for s in FEED_STATE.values() if s["status"] == "ok")
         n = len(srcs)
     save_cache()
+    try:
+        compute_breaking()
+    except Exception as exc:  # noqa: BLE001 — clustering must never kill the sweep
+        print(f"[breaking] compute failed: {exc}")
     print(f"[refresh] {n} feeds in {time.time() - t0:.1f}s — {ok} ok, {n - ok} failing")
 
 
@@ -361,11 +411,195 @@ def load_cache():
         print(f"[cache] ignoring unreadable cache: {exc}")
 
 
+# ---------------------------------------------------------------- KEV catalog
+
+def kev_path():
+    return os.path.join(ARGS.data, "kev.json")
+
+
+def save_kev():
+    os.makedirs(ARGS.data, exist_ok=True)
+    with STATE_LOCK:
+        payload = {"fetched_at": KEV["fetched_at"], "count": len(KEV["cves"]),
+                   "cves": sorted(KEV["cves"])}
+    tmp = kev_path() + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        fh.write(json.dumps(payload))
+    os.replace(tmp, kev_path())
+
+
+def load_kev():
+    try:
+        with open(kev_path(), encoding="utf-8") as fh:
+            payload = json.load(fh)
+        cves = {c.upper() for c in payload.get("cves", []) if isinstance(c, str)}
+        with STATE_LOCK:
+            KEV.update(cves=cves, fetched_at=float(payload.get("fetched_at", 0)))
+        print(f"[kev] warm start: {len(cves)} exploited CVEs from previous run")
+    except FileNotFoundError:
+        pass
+    except (json.JSONDecodeError, OSError, TypeError, ValueError) as exc:
+        print(f"[kev] ignoring unreadable kev cache: {exc}")
+
+
+def refresh_kev():
+    if time.time() - KEV["fetched_at"] < KEV_REFRESH_SECONDS:
+        return
+    try:
+        payload = json.loads(fetch_bytes(KEV_URL, timeout=20))
+        cves = {v["cveID"].upper() for v in payload.get("vulnerabilities", [])
+                if v.get("cveID")}
+        if not cves:
+            raise ValueError("KEV catalog parsed but empty")
+        with STATE_LOCK:
+            KEV.update(cves=cves, fetched_at=time.time())
+        save_kev()
+        print(f"[kev] {len(cves)} exploited CVEs loaded")
+    except Exception as exc:  # noqa: BLE001 — never fatal; keep old set, retry next sweep
+        print(f"[kev] fetch failed, keeping {len(KEV['cves'])} cached: {exc}")
+
+
+# ---------------------------------------------------------------- breaking news
+
+def title_tokens(title):
+    return set(re.findall(r"[a-z0-9][a-z0-9+.#\-]{2,}", title.lower())) - STOPWORDS
+
+
+def _similar(tokens, cves, seed_tokens, seed_cves):
+    # CVE joining only for focused items, so Patch-Tuesday roundups listing
+    # dozens of CVEs don't glue unrelated stories together
+    if (cves and seed_cves and len(cves) <= CVE_JOIN_MAX
+            and len(seed_cves) <= CVE_JOIN_MAX and cves & seed_cves):
+        return True
+    inter = len(tokens & seed_tokens)
+    if inter < SIM_MIN_OVERLAP:
+        return False
+    return inter / max(1, min(len(tokens), len(seed_tokens))) >= SIM_THRESHOLD
+
+
+def _pick_rep(members):
+    return max(members, key=lambda m: (m["preferred"], not m["guessed"],
+                                       len(m["summary"])))
+
+
+def compute_breaking():
+    """Cluster recent items into cross-source stories; store the top few."""
+    now = time.time()
+    cutoff = now - BREAKING_WINDOW_SECONDS
+    kev = KEV["cves"]
+    pool, seen = [], set()
+    with STATE_LOCK:
+        for sid, st in FEED_STATE.items():
+            src = SOURCES.get(sid)
+            if not src:
+                continue
+            for it in st.get("items", []):
+                if it["ts"] < cutoff:
+                    continue
+                k = it["link"] or it["id"]
+                if k in seen:
+                    continue
+                seen.add(k)
+                pool.append({
+                    "id": it["id"], "title": it["title"], "link": it["link"],
+                    "ts": it["ts"], "guessed": it.get("guessed", False),
+                    "summary": it["summary"],
+                    "topics": effective_topics(it, src, kev),
+                    "cves": it.get("cves", []),
+                    "source": src["id"], "source_name": src["name"],
+                    "category": src["category"], "preferred": src["preferred"],
+                    "site": src.get("site") or it["link"],
+                })
+    pool.sort(key=lambda m: m["ts"], reverse=True)
+    del pool[BREAKING_POOL_MAX:]
+
+    # greedy clustering against each cluster's seed (first, newest member) —
+    # seed comparison avoids chain drift at O(items * clusters)
+    clusters = []
+    for m in pool:
+        tokens, cves = title_tokens(m["title"]), set(m["cves"])
+        for cl in clusters:
+            if _similar(tokens, cves, cl["seed_tokens"], cl["seed_cves"]):
+                cl["members"].append(m)
+                break
+        else:
+            clusters.append({"seed_tokens": tokens, "seed_cves": cves,
+                             "members": [m]})
+
+    scored = []
+    for cl in clusters:
+        members = cl["members"]
+        distinct = len({m["source"] for m in members})
+        age_h = (now - max(m["ts"] for m in members)) / 3600
+        score = (3.0 * (distinct - 1)
+                 + (1.0 if any(m["preferred"] for m in members) else 0.0)
+                 + 2.0 * max(0.0, 1 - age_h / 48))
+        scored.append({"members": members, "sources_count": distinct,
+                       "score": round(score, 2),
+                       "cves": sorted({c for m in members for c in m["cves"]})})
+    scored.sort(key=lambda c: c["score"], reverse=True)
+
+    top = [c for c in scored if c["sources_count"] >= BREAKING_MIN_SOURCES]
+    top = top[:BREAKING_MAX]
+    if len(top) < BREAKING_MAX:  # quiet window / cold start: best singles fill in
+        top += [c for c in scored
+                if c["sources_count"] < BREAKING_MIN_SOURCES][: BREAKING_MAX - len(top)]
+    with STATE_LOCK:
+        BREAKING.update(clusters=top, computed_at=now)
+
+
+def api_breaking(params):
+    exclude = set(filter(None, params.get("exclude", [""])[0].split(",")))
+    with STATE_LOCK:
+        snapshot = BREAKING["clusters"]
+        computed_at = BREAKING["computed_at"]
+    out = []
+    for cl in snapshot:
+        members = [m for m in cl["members"] if m["source"] not in exclude]
+        if not members:
+            continue
+        rep = _pick_rep(members)
+        others = []
+        for m in sorted(members, key=lambda m: m["ts"], reverse=True):
+            if m["source_name"] != rep["source_name"] and m["source_name"] not in others:
+                others.append(m["source_name"])
+        entry = dict(rep)
+        entry.update(sources_count=len({m["source"] for m in members}),
+                     other_sources=others[:3], cluster_size=len(members),
+                     score=cl["score"])
+        out.append(entry)
+        if len(out) >= BREAKING_MAX:
+            break
+    return {"breaking": out, "computed_at": computed_at,
+            "window_hours": BREAKING_WINDOW_SECONDS // 3600}
+
+
 # ---------------------------------------------------------------- queries
+
+def is_exploited(it, kev):
+    return ("exploited" in it.get("topics", ())
+            or any(c in kev for c in it.get("cves", ())))
+
+
+def is_threat_intel(it, src):
+    return (src.get("group") == "threat-intel"
+            or "threatintel" in it.get("topics", ()))
+
+
+def effective_topics(it, src, kev):
+    """Item topics plus query-time signals (KEV membership, source group)."""
+    topics = list(it.get("topics", []))
+    if "exploited" not in topics and any(c in kev for c in it.get("cves", ())):
+        topics.append("exploited")
+    if "threatintel" not in topics and src.get("group") == "threat-intel":
+        topics.append("threatintel")
+    return topics
+
 
 def collect_items(tab="all", q="", exclude=None, sort="smart"):
     exclude = exclude or set()
     terms = [t for t in (q or "").lower().split() if t]
+    kev = KEV["cves"]
     rows = []
     with STATE_LOCK:
         for sid, st in FEED_STATE.items():
@@ -377,6 +611,10 @@ def collect_items(tab="all", q="", exclude=None, sort="smart"):
                 if tab == "cyber" and cat != "cyber":
                     continue
                 if tab == "ai" and not (cat == "ai" or "ai" in it["topics"]):
+                    continue
+                if tab == "exploited" and not is_exploited(it, kev):
+                    continue
+                if tab == "intel" and not is_threat_intel(it, src):
                     continue
                 if terms:
                     blob = f"{it['title']} {it['summary']} {name}".lower()
@@ -410,10 +648,12 @@ def api_items(params):
         offset, limit = 0, 100
     rows = collect_items(tab, q, exclude, sort)
     page = rows[offset: offset + limit]
+    kev = KEV["cves"]
     items = [{
         "id": it["id"], "title": it["title"], "link": it["link"],
         "ts": it["ts"], "guessed": it.get("guessed", False),
-        "summary": it["summary"], "topics": it["topics"],
+        "summary": it["summary"], "topics": effective_topics(it, src, kev),
+        "cves": it.get("cves", []),
         "source": src["id"], "source_name": src["name"],
         "category": src["category"], "preferred": src["preferred"],
         "site": src.get("site") or it["link"],
@@ -486,6 +726,8 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if parsed.path == "/api/items":
                 return self._json(api_items(params))
+            if parsed.path == "/api/breaking":
+                return self._json(api_breaking(params))
             if parsed.path == "/api/sources":
                 return self._json(api_sources())
             return self._static(parsed.path)
@@ -518,6 +760,7 @@ def load_sources():
     print(f"[sources] {len(SOURCES)} feeds "
           f"({sum(1 for s in SOURCES.values() if s['category'] == 'cyber')} cyber, "
           f"{sum(1 for s in SOURCES.values() if s['category'] == 'ai')} ai, "
+          f"{sum(1 for s in SOURCES.values() if s.get('group') == 'threat-intel')} threat-intel, "
           f"{sum(1 for s in SOURCES.values() if s['preferred'])} preferred)")
 
 
@@ -535,6 +778,11 @@ def main():
 
     load_sources()
     load_cache()
+    load_kev()
+    try:
+        compute_breaking()  # populate the hero from cache before the first sweep
+    except Exception as exc:  # noqa: BLE001
+        print(f"[breaking] warm-start compute failed: {exc}")
 
     threading.Thread(target=refresher_loop, daemon=True).start()
 
