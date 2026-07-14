@@ -9,14 +9,14 @@
     --bg:#0a0e14; --bg2:#0f141d; --card:#111722; --card2:#151d2a;
     --line:#1e2735; --text:#e6edf3; --muted:#8b98a9; --faint:#5b6879;
     --cyber:#22d3ee; --ai:#a78bfa; --gold:#f5c542; --ok:#34d399; --bad:#f87171;
-    --accent:#38bdf8; --exploit:#fb7185; --intel:#34d399;
+    --accent:#38bdf8; --exploit:#fb7185; --intel:#34d399; --action:#f59e0b;
   }
   @media (prefers-color-scheme: light){
     :root{
       --bg:#f4f6f9; --bg2:#eef1f6; --card:#ffffff; --card2:#f7f9fc;
       --line:#dde3ec; --text:#111827; --muted:#5b6675; --faint:#93a0b1;
       --cyber:#0891b2; --ai:#7c3aed; --gold:#b8860b; --ok:#059669; --bad:#dc2626;
-      --accent:#0284c7; --exploit:#dc2626; --intel:#059669;
+      --accent:#0284c7; --exploit:#dc2626; --intel:#059669; --action:#b45309;
     }
   }
   *{box-sizing:border-box}
@@ -49,10 +49,12 @@
   @keyframes rot{to{transform:rotate(360deg)}}
 
   .controls{display:flex; flex-wrap:wrap; gap:8px; padding:0 0 12px; align-items:center}
-  .tabs{display:flex; gap:4px; background:var(--card); border:1px solid var(--line); border-radius:9px; padding:3px}
+  .tabs{display:flex; gap:4px; background:var(--card); border:1px solid var(--line); border-radius:9px;
+    padding:3px;max-width:100%;overflow-x:auto;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
   .tabs button{
     border:0; background:transparent; color:var(--muted); font-size:13px; font-weight:600;
-    padding:6px 12px; border-radius:7px; cursor:pointer;
+    padding:6px 12px; border-radius:7px; cursor:pointer;white-space:nowrap;
   }
   .tabs button.on{background:var(--card2); color:var(--text); box-shadow:inset 0 0 0 1px var(--line)}
   .tabs button .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:1px}
@@ -61,10 +63,13 @@
     border-radius:9px; padding:8px 12px; font-size:14px; outline:none;
   }
   #search:focus{border-color:var(--accent)}
-  select,#sourcesBtn{
+  select,#sourcesBtn,#saveViewBtn,#deleteViewBtn{
     border:1px solid var(--line); background:var(--card); color:var(--text);
     border-radius:9px; padding:8px 10px; font-size:13px; cursor:pointer;
   }
+  .read-toggle{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:12px;
+    white-space:nowrap;padding:0 4px}
+  .read-toggle input{accent-color:var(--accent)}
 
   #progress{height:3px; background:transparent; position:relative; overflow:hidden}
   #progress.on{background:var(--line)}
@@ -88,11 +93,17 @@
     background:var(--card); border:1px solid var(--line); border-radius:12px;
   }
   .item:hover{border-color:color-mix(in srgb, var(--accent) 45%, var(--line))}
+  .item.read .body{opacity:.62}
   .fav{width:20px;height:20px;flex:none;margin-top:2px;border-radius:5px;overflow:hidden}
   .fav img{width:20px;height:20px;display:block}
   .fav .ph{width:20px;height:20px;display:flex;align-items:center;justify-content:center;
     font-size:10px;font-weight:700;color:var(--bg);border-radius:5px}
   .body{flex:1;min-width:0}
+  .item-actions{display:flex;flex-direction:column;gap:5px;flex:none}
+  .item-actions button{width:29px;height:29px;border:1px solid var(--line);border-radius:7px;
+    background:var(--card2);color:var(--muted);cursor:pointer;font-size:15px;line-height:1}
+  .item-actions button:hover{border-color:var(--accent);color:var(--text)}
+  .item-actions button.on{color:var(--gold);border-color:color-mix(in srgb,var(--gold) 50%,var(--line))}
   .title{font-size:15px;font-weight:600;line-height:1.35;word-wrap:break-word}
   .title a:hover{text-decoration:underline}
   .meta{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:5px;font-size:12px;color:var(--muted)}
@@ -105,7 +116,17 @@
   .badge.exploit{color:var(--exploit);background:color-mix(in srgb, var(--exploit) 14%, transparent)}
   .badge.cve{color:var(--accent);background:color-mix(in srgb, var(--accent) 14%, transparent)}
   .badge.intel{color:var(--intel);background:color-mix(in srgb, var(--intel) 14%, transparent)}
+  .badge.action{color:var(--action);background:color-mix(in srgb, var(--action) 14%, transparent)}
+  .action-reasons{margin-top:7px;font-size:12px;color:var(--action);font-weight:600}
   .time{color:var(--faint)}
+  .coverage-btn{border:0;background:transparent;color:var(--accent);padding:0;font:inherit;
+    font-weight:600;cursor:pointer}
+  .coverage-btn:hover{text-decoration:underline}
+  .coverage-list{margin-top:8px;padding:8px 10px;border-left:2px solid var(--line);
+    background:var(--card2);border-radius:0 8px 8px 0;font-size:12px}
+  .coverage-list a{display:block;color:var(--muted);padding:3px 0}
+  .coverage-list a:hover{color:var(--text);text-decoration:underline}
+  .coverage-list b{color:var(--text);font-weight:600}
   .sum{margin-top:5px;font-size:13px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .skel{height:74px;border-radius:12px;margin-bottom:8px;border:1px solid var(--line);
     background:linear-gradient(100deg,var(--card) 40%,var(--card2) 50%,var(--card) 60%);
@@ -177,6 +198,8 @@
     <div class="controls">
       <div class="tabs" id="tabs">
         <button data-tab="all" class="on">All</button>
+        <button data-tab="actionable"><span class="dot" style="background:var(--action)"></span>Actionable</button>
+        <button data-tab="bookmarks"><span class="dot" style="background:var(--gold)"></span>Bookmarks</button>
         <button data-tab="cyber"><span class="dot" style="background:var(--cyber)"></span>Cybersecurity</button>
         <button data-tab="ai"><span class="dot" style="background:var(--ai)"></span>Frontier AI</button>
         <button data-tab="exploited"><span class="dot" style="background:var(--exploit)"></span>Exploited CVEs</button>
@@ -184,10 +207,14 @@
       </div>
       <input id="search" type="search" placeholder="Search headlines…  ( / )" autocomplete="off">
       <select id="sort" title="Sort order">
-        <option value="smart">Top (preferred first)</option>
+        <option value="smart">Top (relevance + recency)</option>
         <option value="latest">Newest</option>
       </select>
       <button id="sourcesBtn">Sources</button>
+      <label class="read-toggle"><input id="hideRead" type="checkbox">Hide read</label>
+      <select id="savedViews" title="Saved views"><option value="">Saved views</option></select>
+      <button id="saveViewBtn">Save view</button>
+      <button id="deleteViewBtn" hidden>Delete view</button>
     </div>
   </div>
   <div id="progress"><div class="fill"></div></div>
@@ -224,13 +251,33 @@
 const $ = id => document.getElementById(id);
 const PAGE = 100;
 const PREFERRED_BOOST = 12 * 3600;  // mirror of server-side smart sort
+const RELEVANCE_BOOST = 10 * 60;    // each relevance point is worth 10m
+const ACTION_THRESHOLD = 30;
+const ACTION_BOOST = 30 * 60;
+const DIVERSITY_WINDOW = 50;
+const MAX_PER_SOURCE = 3;
+const COVERAGE_WINDOW = 72 * 3600;
+const COVERAGE_STOPWORDS = new Set((
+  "a an and are as at be by for from has have how in is it its new of on or over than " +
+  "that the this to via vs was what when why will with you your after more say says said " +
+  "report reports researchers hackers attackers security update patch patches now could may " +
+  "2024 2025 2026"
+).split(/\s+/));
+function storedJSON(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
+  catch { return fallback; }
+}
 const state = {
   tab: localStorage.getItem("tab") || "all",
   sort: localStorage.getItem("sort") || "smart",
   q: "",
   offset: 0,
   total: 0,
-  disabled: new Set(JSON.parse(localStorage.getItem("disabled") || "[]")),
+  disabled: new Set(storedJSON("disabled", [])),
+  bookmarks: new Set(storedJSON("bookmarks", [])),
+  read: new Set(storedJSON("read", [])),
+  hideRead: localStorage.getItem("hideRead") === "1",
+  savedViews: storedJSON("savedViews", []),
   sources: null,
   pollTimer: null,
   corpus: null,     // full item list from data/items.json
@@ -238,6 +285,7 @@ const state = {
   breaking: null,   // clusters from data/breaking.json
   mode: "static",   // "live" when served by server.py, "static" on Pages
 };
+if (!Array.isArray(state.savedViews)) state.savedViews = [];
 
 /* ---------- helpers ---------- */
 function timeago(ts, guessed) {
@@ -273,12 +321,109 @@ function favicon(item) {
   return box;
 }
 
+function persistSet(key, values, max = 5000) {
+  while (values.size > max) values.delete(values.values().next().value);
+  localStorage.setItem(key, JSON.stringify([...values]));
+}
+
+function markRead(item, isRead = true) {
+  if (isRead) {
+    state.read.delete(item.id);
+    state.read.add(item.id);
+  } else state.read.delete(item.id);
+  persistSet("read", state.read);
+}
+
+function toggleBookmark(item) {
+  if (state.bookmarks.has(item.id)) state.bookmarks.delete(item.id);
+  else state.bookmarks.add(item.id);
+  persistSet("bookmarks", state.bookmarks);
+}
+
+function coverageURL(raw) {
+  try {
+    const u = new URL(raw);
+    u.hash = "";
+    u.hostname = u.hostname.replace(/^www\./, "");
+    for (const key of [...u.searchParams.keys()])
+      if (key.startsWith("utm_") || ["fbclid","gclid","mc_cid","mc_eid","ref","source"].includes(key))
+        u.searchParams.delete(key);
+    u.pathname = u.pathname.replace(/\/$/, "") || "/";
+    return u.toString();
+  } catch { return raw || ""; }
+}
+
+function coverageTokens(title) {
+  return new Set((title.toLowerCase().match(/[a-z0-9][a-z0-9+.#-]{2,}/g) || [])
+    .filter(token => !COVERAGE_STOPWORDS.has(token)));
+}
+
+function similarCoverage(item, tokens, cluster) {
+  const cves = new Set(item.cves || []), seedCves = cluster.cves;
+  const shared = [...cves].filter(cve => seedCves.has(cve));
+  if (cves.size && seedCves.size && !shared.length) return false;
+  if (shared.length && cves.size <= 3 && seedCves.size <= 3) return true;
+  if (item.source === cluster.source)
+    return tokens.size >= 3 && tokens.size === cluster.tokens.size &&
+      [...tokens].every(token => cluster.tokens.has(token));
+  let intersection = 0;
+  for (const token of tokens) if (cluster.tokens.has(token)) intersection++;
+  return intersection >= 3 &&
+    intersection / Math.max(1, Math.min(tokens.size, cluster.tokens.size)) >= .6;
+}
+
+function groupCoverage(items) {
+  const clusters = [];
+  for (const item of items.slice().sort((a, b) => b.ts - a.ts)) {
+    const tokens = coverageTokens(item.title), url = coverageURL(item.link);
+    let target = null;
+    for (const cluster of clusters) {
+      const sameURL = url && url === cluster.url;
+      const close = Math.abs(item.ts - cluster.ts) <= COVERAGE_WINDOW;
+      if (sameURL || (close && similarCoverage(item, tokens, cluster))) {
+        target = cluster; break;
+      }
+    }
+    if (target) target.members.push(item);
+    else clusters.push({ts:item.ts, url, tokens, cves:new Set(item.cves || []),
+      source:item.source, members:[item]});
+  }
+  return clusters.map(cluster => {
+    const members = cluster.members;
+    const rep = members.slice().sort((a, b) =>
+      (b.preferred - a.preferred) || ((b.relevance || 0) - (a.relevance || 0)) ||
+      (a.guessed - b.guessed) || ((b.summary || "").length - (a.summary || "").length) ||
+      (b.ts - a.ts))[0];
+    const merged = Object.assign({}, rep);
+    merged.ts = Math.max(...members.map(item => item.ts));
+    merged.relevance = Math.max(...members.map(item => item.relevance || 0));
+    const actionItem = members.slice().sort((a, b) =>
+      (b.action_score || 0) - (a.action_score || 0))[0];
+    merged.action_score = actionItem.action_score || 0;
+    merged.action_level = actionItem.action_level || "low";
+    merged.action_reasons = [...new Set(members.flatMap(item => item.action_reasons || []))];
+    merged.topics = [...new Set(members.flatMap(item => item.topics || []))].sort();
+    merged.cves = [...new Set(members.flatMap(item => item.cves || []))].sort();
+    merged.coverage_count = members.length;
+    merged.coverage_sources_count = new Set(members.map(item => item.source)).size;
+    merged.coverage = members.filter(item => item !== rep).slice(0, 12).map(item => ({
+      title:item.title, link:item.link, ts:item.ts, source:item.source,
+      source_name:item.source_name, preferred:item.preferred,
+    }));
+    return merged;
+  });
+}
+
 /* ---------- rendering ---------- */
 function topicBadges(meta, item) {
   const tps = item.topics || [], cves = item.cves || [];
   if (item.category !== "ai" && tps.includes("ai"))
     meta.appendChild(el("span", "badge xai", "AI"));
-  if (tps.includes("exploited")) {
+  if (tps.includes("kev")) {
+    const b = el("span", "badge exploit", "CISA KEV");
+    if (cves.length) b.title = cves.join(", ");
+    meta.appendChild(b);
+  } else if (tps.includes("exploited")) {
     const b = el("span", "badge exploit", "EXPLOITED");
     if (cves.length) b.title = cves.join(", ");
     meta.appendChild(b);
@@ -289,16 +434,27 @@ function topicBadges(meta, item) {
     meta.appendChild(b);
   }
   if (tps.includes("threatintel")) meta.appendChild(el("span", "badge intel", "INTEL"));
+  if ((item.action_score || 0) >= ACTION_THRESHOLD) {
+    const b = el("span", "badge action", (item.action_level || "medium").toUpperCase());
+    b.title = (item.action_reasons || []).join(" · ");
+    meta.appendChild(b);
+  }
 }
 
 function row(item) {
   const it = el("article", "item");
+  if (state.read.has(item.id)) it.classList.add("read");
   it.appendChild(favicon(item));
   const body = el("div", "body");
 
   const title = el("div", "title");
   const a = el("a", null, item.title);
   a.href = item.link; a.target = "_blank"; a.rel = "noopener noreferrer";
+  a.addEventListener("click", () => {
+    markRead(item, true);
+    it.classList.add("read");
+    if (state.hideRead) setTimeout(() => applyView(false), 0);
+  });
   title.appendChild(a);
   body.appendChild(title);
 
@@ -308,13 +464,72 @@ function row(item) {
   meta.appendChild(el("span", "badge " + (item.category === "ai" ? "ai" : "cyber"),
     item.category === "ai" ? "AI" : "CYBER"));
   topicBadges(meta, item);
+  let coverageBtn = null;
+  if ((item.coverage_count || 1) > 1) {
+    const sources = item.coverage_sources_count || 1;
+    const label = sources > 1 ? `${sources} sources` : `${item.coverage_count} reports`;
+    coverageBtn = el("button", "coverage-btn", label);
+    coverageBtn.type = "button";
+    coverageBtn.setAttribute("aria-expanded", "false");
+    meta.appendChild(coverageBtn);
+  }
   const t = el("span", "time", timeago(item.ts, item.guessed));
   if (item.guessed) t.title = "Feed gave no publish date — time first seen";
   meta.appendChild(t);
   body.appendChild(meta);
 
+  if (coverageBtn && item.coverage && item.coverage.length) {
+    const list = el("div", "coverage-list");
+    list.hidden = true;
+    for (const report of item.coverage) {
+      const link = el("a");
+      link.href = report.link; link.target = "_blank"; link.rel = "noopener noreferrer";
+      const source = el("b", null, report.source_name);
+      link.appendChild(source);
+      link.appendChild(document.createTextNode(` — ${report.title} · ${timeago(report.ts)}`));
+      list.appendChild(link);
+    }
+    coverageBtn.addEventListener("click", () => {
+      list.hidden = !list.hidden;
+      coverageBtn.setAttribute("aria-expanded", String(!list.hidden));
+    });
+    body.appendChild(list);
+  }
+
+  if (state.tab === "actionable" && item.action_reasons && item.action_reasons.length)
+    body.appendChild(el("div", "action-reasons", "Why: " + item.action_reasons.join(" · ")));
+
   if (item.summary) body.appendChild(el("div", "sum", item.summary));
   it.appendChild(body);
+
+  const actions = el("div", "item-actions");
+  const bookmark = el("button");
+  bookmark.type = "button";
+  const read = el("button");
+  read.type = "button";
+  function syncActions() {
+    const bookmarked = state.bookmarks.has(item.id), isRead = state.read.has(item.id);
+    bookmark.textContent = bookmarked ? "★" : "☆";
+    bookmark.classList.toggle("on", bookmarked);
+    bookmark.setAttribute("aria-label", bookmarked ? "Remove bookmark" : "Add bookmark");
+    bookmark.title = bookmarked ? "Remove bookmark" : "Add bookmark";
+    read.textContent = isRead ? "✓" : "○";
+    read.setAttribute("aria-label", isRead ? "Mark unread" : "Mark read");
+    read.title = isRead ? "Mark unread" : "Mark read";
+  }
+  bookmark.addEventListener("click", () => {
+    toggleBookmark(item);
+    if (state.tab === "bookmarks") applyView(false); else syncActions();
+  });
+  read.addEventListener("click", () => {
+    markRead(item, !state.read.has(item.id));
+    it.classList.toggle("read", state.read.has(item.id));
+    if (state.hideRead) applyView(false); else syncActions();
+  });
+  syncActions();
+  actions.appendChild(bookmark);
+  actions.appendChild(read);
+  it.appendChild(actions);
   return it;
 }
 
@@ -326,6 +541,7 @@ function heroCard(item) {
   const title = el("div", "title");
   const a = el("a", null, item.title);
   a.href = item.link; a.target = "_blank"; a.rel = "noopener noreferrer";
+  a.addEventListener("click", () => markRead(item, true));
   title.appendChild(a);
   body.appendChild(title);
 
@@ -356,6 +572,7 @@ function renderHero(list) {
 
 function pickRep(members) {
   return members.slice().sort((a, b) =>
+    ((b.relevance || 0) - (a.relevance || 0)) ||
     (b.preferred - a.preferred) || (a.guessed - b.guessed) ||
     (b.summary.length - a.summary.length))[0];
 }
@@ -366,7 +583,8 @@ function renderHeroView() {
   if (state.tab !== "all" || state.q || !clusters) { $("hero").hidden = true; return; }
   const out = [];
   for (const cl of clusters) {
-    const ms = cl.members.filter(m => !state.disabled.has(m.source));
+    const ms = cl.members.filter(m => !state.disabled.has(m.source) &&
+      !(state.hideRead && state.read.has(m.id)));
     if (!ms.length) continue;
     const rep = Object.assign({}, pickRep(ms));
     const others = [];
@@ -392,7 +610,10 @@ function renderItems(items, append) {
   if (!append) f.textContent = "";
   if (!items.length && !append) {
     f.appendChild(el("div", "empty",
-      state.q ? "No stories match your search." : "No stories yet — feeds are still loading."));
+      state.q ? "No stories match your search." :
+      state.tab === "bookmarks" ? "No bookmarked stories yet." :
+      state.hideRead ? "No unread stories match this view." :
+      "No stories yet — feeds are still loading."));
   }
   for (const it of items) f.appendChild(row(it));
   $("moreBtn").hidden = state.offset + PAGE >= state.total;
@@ -425,9 +646,12 @@ function renderStatus() {
    live by server.py at the same path) and all filtering happens client-side. */
 function filterCorpus() {
   const terms = state.q.toLowerCase().split(/\s+/).filter(Boolean);
-  const seen = new Set(), out = [];
+  let out = [];
   for (const it of state.corpus) {
     if (state.disabled.has(it.source)) continue;
+    if (state.tab === "bookmarks" && !state.bookmarks.has(it.id)) continue;
+    if (state.hideRead && state.read.has(it.id)) continue;
+    if (state.tab === "actionable" && (it.action_score || 0) < ACTION_THRESHOLD) continue;
     if (state.tab === "cyber" && it.category !== "cyber") continue;
     if (state.tab === "ai" && !(it.category === "ai" || it.topics.includes("ai"))) continue;
     if (state.tab === "exploited" && !it.topics.includes("exploited")) continue;
@@ -436,15 +660,26 @@ function filterCorpus() {
       const blob = (it.title + " " + it.summary + " " + it.source_name).toLowerCase();
       if (!terms.every(t => blob.includes(t))) continue;
     }
-    const k = it.link || it.id;
-    if (seen.has(k)) continue;
-    seen.add(k);
     out.push(it);
   }
-  if (state.sort === "latest") out.sort((a, b) => b.ts - a.ts);
-  else out.sort((a, b) =>
-    (b.ts + (b.preferred ? PREFERRED_BOOST : 0)) - (a.ts + (a.preferred ? PREFERRED_BOOST : 0)));
-  return out;
+  out = groupCoverage(out);
+  if (state.sort === "latest") {
+    out.sort((a, b) => b.ts - a.ts);
+    return out;
+  }
+  const smartScore = item => item.ts + (item.preferred ? PREFERRED_BOOST : 0) +
+    (item.relevance || 0) * RELEVANCE_BOOST +
+    (state.tab === "actionable" ? (item.action_score || 0) * ACTION_BOOST : 0);
+  out.sort((a, b) => smartScore(b) - smartScore(a));
+  const selected = [], deferred = [], counts = new Map();
+  for (const item of out) {
+    const count = counts.get(item.source) || 0;
+    if (selected.length < DIVERSITY_WINDOW && count < MAX_PER_SOURCE) {
+      selected.push(item);
+      counts.set(item.source, count + 1);
+    } else deferred.push(item);
+  }
+  return selected.concat(deferred);
 }
 
 function applyView(append) {
@@ -458,6 +693,9 @@ function applyView(append) {
   if (state.disabled.size) {
     note.hidden = false;
     note.textContent = `${state.disabled.size} sources hidden — manage in Sources.`;
+  } else if (state.tab === "actionable") {
+    note.hidden = false;
+    note.textContent = "Prioritised by exploitation, KEV, critical impact, urgent containment and remediation signals.";
   } else note.hidden = true;
 }
 
@@ -537,6 +775,7 @@ async function loadSources() {
 }
 function persistDisabled() {
   localStorage.setItem("disabled", JSON.stringify([...state.disabled]));
+  clearSavedSelection();
   applyView(false);
   if (state.sources) {
     const ok = state.sources.filter(s => s.status === "ok").length;
@@ -560,22 +799,98 @@ function closePanel() {
   $("backdrop").classList.remove("open");
 }
 
+/* ---------- saved views ---------- */
+function persistSavedViews() {
+  state.savedViews = state.savedViews.slice(0, 20);
+  localStorage.setItem("savedViews", JSON.stringify(state.savedViews));
+}
+
+function renderSavedViews(selected = "") {
+  const select = $("savedViews");
+  select.textContent = "";
+  const placeholder = el("option", null, "Saved views");
+  placeholder.value = "";
+  select.appendChild(placeholder);
+  for (const view of state.savedViews) {
+    const option = el("option", null, view.name);
+    option.value = view.id;
+    select.appendChild(option);
+  }
+  select.value = selected;
+  $("deleteViewBtn").hidden = !selected;
+}
+
+function clearSavedSelection() {
+  $("savedViews").value = "";
+  $("deleteViewBtn").hidden = true;
+}
+
+function saveCurrentView() {
+  const suggested = state.q ||
+    (state.tab === "all" ? "My view" : state.tab[0].toUpperCase() + state.tab.slice(1));
+  const name = window.prompt("Name this saved view:", suggested);
+  if (!name || !name.trim()) return;
+  const cleanName = name.trim().slice(0, 60);
+  const existing = state.savedViews.find(view =>
+    view.name.toLowerCase() === cleanName.toLowerCase());
+  const view = {
+    id: existing ? existing.id : String(Date.now()), name: cleanName,
+    tab: state.tab, sort: state.sort, q: state.q,
+    disabled: [...state.disabled], hideRead: state.hideRead,
+  };
+  if (existing) Object.assign(existing, view);
+  else state.savedViews.unshift(view);
+  persistSavedViews();
+  renderSavedViews(view.id);
+}
+
+function applySavedView(view) {
+  state.tab = view.tab || "all";
+  state.sort = view.sort || "smart";
+  state.q = view.q || "";
+  state.disabled = new Set(view.disabled || []);
+  state.hideRead = Boolean(view.hideRead);
+  localStorage.setItem("tab", state.tab);
+  localStorage.setItem("sort", state.sort);
+  localStorage.setItem("disabled", JSON.stringify([...state.disabled]));
+  localStorage.setItem("hideRead", state.hideRead ? "1" : "0");
+  $("search").value = state.q;
+  $("sort").value = state.sort;
+  $("hideRead").checked = state.hideRead;
+  document.querySelectorAll("#tabs button").forEach(button =>
+    button.classList.toggle("on", button.dataset.tab === state.tab));
+  applyView(false);
+}
+
+function deleteSelectedView() {
+  const id = $("savedViews").value;
+  if (!id) return;
+  state.savedViews = state.savedViews.filter(view => view.id !== id);
+  persistSavedViews();
+  renderSavedViews();
+}
+
 /* ---------- wiring ---------- */
 $("tabs").addEventListener("click", e => {
   const b = e.target.closest("button");
   if (!b) return;
   state.tab = b.dataset.tab;
   localStorage.setItem("tab", state.tab);
+  clearSavedSelection();
   document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x === b));
   applyView(false);
 });
 let debounce;
 $("search").addEventListener("input", e => {
   clearTimeout(debounce);
-  debounce = setTimeout(() => { state.q = e.target.value.trim(); applyView(false); }, 300);
+  debounce = setTimeout(() => {
+    state.q = e.target.value.trim(); clearSavedSelection(); applyView(false);
+  }, 300);
 });
 $("search").addEventListener("keydown", e => {
-  if (e.key === "Escape") { e.target.value = ""; state.q = ""; applyView(false); }
+  if (e.key === "Escape") {
+    e.target.value = ""; state.q = ""; clearSavedSelection(); applyView(false);
+  }
 });
 document.addEventListener("keydown", e => {
   if (e.key === "/" && document.activeElement !== $("search")) {
@@ -586,8 +901,23 @@ $("sort").value = state.sort;
 $("sort").addEventListener("change", e => {
   state.sort = e.target.value;
   localStorage.setItem("sort", state.sort);
+  clearSavedSelection();
   applyView(false);
 });
+$("hideRead").checked = state.hideRead;
+$("hideRead").addEventListener("change", e => {
+  state.hideRead = e.target.checked;
+  localStorage.setItem("hideRead", state.hideRead ? "1" : "0");
+  clearSavedSelection();
+  applyView(false);
+});
+$("savedViews").addEventListener("change", e => {
+  const view = state.savedViews.find(candidate => candidate.id === e.target.value);
+  $("deleteViewBtn").hidden = !view;
+  if (view) applySavedView(view);
+});
+$("saveViewBtn").addEventListener("click", saveCurrentView);
+$("deleteViewBtn").addEventListener("click", deleteSelectedView);
 $("moreBtn").addEventListener("click", () => { state.offset += PAGE; applyView(true); });
 $("refreshBtn").addEventListener("click", async () => {
   $("refreshBtn").classList.add("spin");
@@ -604,6 +934,7 @@ $("prefOnly").addEventListener("click", () => setAll(s => s.preferred));
 /* ---------- boot ---------- */
 document.querySelectorAll("#tabs button").forEach(b =>
   b.classList.toggle("on", b.dataset.tab === state.tab));
+renderSavedViews();
 skeletons(8);
 fetchAll();
 </script>

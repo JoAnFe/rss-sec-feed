@@ -49,6 +49,12 @@ USER_AGENT = (
 MAX_FEED_BYTES = 8 * 1024 * 1024
 MAX_ITEMS_PER_FEED = 50
 PREFERRED_BOOST_SECONDS = 12 * 3600  # "smart" sort: preferred items float as if 12h fresher
+RELEVANCE_BOOST_SECONDS = 10 * 60    # each relevance point is worth 10m in smart sort
+RELEVANCE_THRESHOLD = 20             # suppress articles with no meaningful topic signal
+SMART_DIVERSITY_WINDOW = 50           # diversify the first page of smart-sort results
+SMART_MAX_PER_SOURCE = 3              # prevent one high-volume feed dominating Top
+ACTIONABILITY_THRESHOLD = 30
+ACTIONABILITY_BOOST_SECONDS = 30 * 60
 
 AI_TOPIC_RE = re.compile(
     r"\b(a\.?i\.?|artificial intelligence|machine learning|deep learning|neural net\w*|"
@@ -75,6 +81,52 @@ THREAT_INTEL_RE = re.compile(
     re.IGNORECASE,
 )
 
+CYBER_HIGH_SIGNAL_RE = re.compile(
+    r"\b(cyber(?:security|attack|crime|espionage)|vulnerabilit\w*|exploit\w*|"
+    r"zero-?day|0-?day|ransomware|malware|phishing|breach(?:ed|es)?|data leak\w*|"
+    r"remote code execution|rce\b|authentication bypass|privilege escalation|"
+    r"supply[- ]chain attack|backdoor\w*|botnet\w*|credential (?:theft|stealing)|"
+    r"security advisor\w*|patch tuesday|incident response|threat actor\w*|"
+    r"hack(?:er|ers|ing|ed)|rootkit\w*|infostealer\w*|spyware)\b",
+    re.IGNORECASE,
+)
+
+CYBER_MEDIUM_SIGNAL_RE = re.compile(
+    r"\b(security|privacy|encrypt\w*|cryptograph\w*|identity|authentication|"
+    r"authorization|password\w*|passkeys?|firewalls?|endpoint\w*|fraud|scams?|"
+    r"spoof\w*|dDoS|denial[- ]of[- ]service|cross[- ]site scripting|xss\b|"
+    r"sql injection|buffer overflow|memory corruption|sandbox escape|"
+    r"access control|attack surface|exposure management|digital forensics)\b",
+    re.IGNORECASE,
+)
+
+LOW_SIGNAL_NEWS_RE = re.compile(
+    r"\b(deals?|discounts?|on sale|earnings|stock price|shares|funding round|"
+    r"layoffs?|streaming|box office|smartphone review|phone review|chargers?|"
+    r"televisions?|gaming console|subscription price|shopping)\b",
+    re.IGNORECASE,
+)
+
+ACTION_CRITICAL_RE = re.compile(
+    r"\b(critical (?:vulnerabilit\w*|flaw\w*|bug\w*|security issue\w*)|"
+    r"remote code execution|arbitrary code execution|run malicious code|"
+    r"authentication bypass|privilege escalation)\b",
+    re.IGNORECASE,
+)
+
+ACTION_REMEDIATION_RE = re.compile(
+    r"\b(patch(?:ed|es|ing)?|security update|fix(?:ed|es)?|mitigation\w*|"
+    r"workaround\w*|upgrade to|update now|apply the update)\b",
+    re.IGNORECASE,
+)
+
+ACTION_URGENT_RE = re.compile(
+    r"\b(urgent(?::|\s+(?:action|patch|update|warning|advisory|mitigation|response))|"
+    r"emergency (?:patch|update|directive|mitigation)|shut down|disable immediately|take offline|"
+    r"isolate immediately|disconnect immediately)\b",
+    re.IGNORECASE,
+)
+
 KEV_URL = ("https://www.cisa.gov/sites/default/files/feeds/"
            "known_exploited_vulnerabilities.json")
 KEV_REFRESH_SECONDS = 6 * 3600  # refetch the KEV catalog at most every 6h
@@ -89,6 +141,8 @@ BREAKING_POOL_MAX = 2000   # newest in-window items considered for clustering
 SIM_MIN_OVERLAP = 3        # shared title tokens required to join a cluster
 SIM_THRESHOLD = 0.6        # overlap coefficient threshold
 CVE_JOIN_MAX = 3           # CVE-based joining only for items this focused
+COVERAGE_WINDOW_SECONDS = 72 * 3600
+COVERAGE_ALTERNATES_MAX = 12
 STOPWORDS = frozenset(
     """a an and are as at be by for from has have how in is it its new of on or
     over than that the this to via vs was what when why will with you your
@@ -279,6 +333,65 @@ def parse_feed(data):
 
 # ---------------------------------------------------------------- refresh
 
+def relevance_score(src, title, summary="", topics=None, cves=None):
+    """Return a deterministic 0-100 article relevance score.
+
+    Curated AI feeds start above the display threshold. Cyber articles must
+    carry a content signal, come from a threat-intelligence source, or combine
+    weaker source and topic signals. This keeps general stories from mixed
+    feeds out of the security stream without requiring an external model.
+    """
+    blob = f"{title} {summary}"
+    topics = set(topics or ())
+    cves = set(cves or ())
+    high_signal = bool(CYBER_HIGH_SIGNAL_RE.search(blob))
+
+    score = 35 if src.get("category") == "ai" else 8
+    if src.get("preferred"):
+        score += 8
+    if src.get("group") == "threat-intel":
+        score += 12
+    if cves:
+        score += 30
+    if "exploited" in topics:
+        score += 25
+    if "threatintel" in topics:
+        score += 20
+    if high_signal:
+        score += 25
+    if CYBER_MEDIUM_SIGNAL_RE.search(blob):
+        score += 12
+    if "ai" in topics and src.get("category") == "cyber":
+        score += 5
+
+    strong_context = high_signal or cves or {"exploited", "threatintel"} & topics
+    if LOW_SIGNAL_NEWS_RE.search(blob) and not strong_context:
+        score -= 25
+    return max(0, min(100, score))
+
+
+def item_relevance(it, src):
+    """Read a cached score or calculate one for items from older caches."""
+    if "relevance" in it:
+        return int(it["relevance"])
+    return relevance_score(src, it["title"], it.get("summary", ""),
+                           it.get("topics", ()), it.get("cves", ()))
+
+
+def diversify_smart(rows):
+    """Limit each source in the first Top window while preserving rank order."""
+    selected, deferred, counts = [], [], {}
+    for row in rows:
+        sid = row[1]["id"]
+        if (len(selected) < SMART_DIVERSITY_WINDOW
+                and counts.get(sid, 0) < SMART_MAX_PER_SOURCE):
+            selected.append(row)
+            counts[sid] = counts.get(sid, 0) + 1
+        else:
+            deferred.append(row)
+    return selected + deferred
+
+
 def normalize(src, raw, old_by_id):
     now = datetime.now(timezone.utc)
     ceiling = now + timedelta(days=1)
@@ -305,6 +418,7 @@ def normalize(src, raw, old_by_id):
             topics.append("exploited")  # keyword signal; KEV checked at query time
         if THREAT_INTEL_RE.search(blob):
             topics.append("threatintel")  # content signal; source group checked at query time
+        relevance = relevance_score(src, r["title"], r["summary"], topics, cves)
         out.append({
             "id": iid,
             "title": r["title"],
@@ -314,6 +428,7 @@ def normalize(src, raw, old_by_id):
             "summary": r["summary"],
             "topics": topics,
             "cves": cves,
+            "relevance": relevance,
         })
     return out
 
@@ -481,9 +596,101 @@ def _similar(tokens, cves, seed_tokens, seed_cves):
     return inter / max(1, min(len(tokens), len(seed_tokens))) >= SIM_THRESHOLD
 
 
+_TRACKING_QUERY_KEYS = frozenset({
+    "fbclid", "gclid", "mc_cid", "mc_eid", "ref", "source",
+})
+
+
+def canonical_url(url):
+    """Normalize a story URL for duplicate detection."""
+    try:
+        parsed = urllib.parse.urlsplit(url)
+        host = (parsed.hostname or "").lower()
+        if host.startswith("www."):
+            host = host[4:]
+        query = urllib.parse.urlencode([
+            (key, value) for key, value in urllib.parse.parse_qsl(parsed.query)
+            if not key.lower().startswith("utm_")
+            and key.lower() not in _TRACKING_QUERY_KEYS
+        ])
+        path = parsed.path.rstrip("/") or "/"
+        return urllib.parse.urlunsplit((parsed.scheme.lower(), host, path, query, ""))
+    except (TypeError, ValueError):
+        return url or ""
+
+
+def _coverage_similar(tokens, cves, src_id, cluster):
+    seed_cves = cluster["seed_cves"]
+    shared_cves = cves & seed_cves
+    if cves and seed_cves and not shared_cves:
+        return False
+    if (shared_cves and len(cves) <= CVE_JOIN_MAX
+            and len(seed_cves) <= CVE_JOIN_MAX):
+        return True
+    if src_id == cluster["seed_source"]:
+        return len(tokens) >= SIM_MIN_OVERLAP and tokens == cluster["seed_tokens"]
+    return _similar(tokens, cves, cluster["seed_tokens"], seed_cves)
+
+
+def group_coverage(rows):
+    """Collapse near-identical articles and retain alternate coverage links."""
+    clusters = []
+    for it, src in sorted(rows, key=lambda row: row[0]["ts"], reverse=True):
+        tokens = title_tokens(it["title"])
+        cves = set(it.get("cves", ()))
+        url = canonical_url(it.get("link", ""))
+        for cluster in clusters:
+            within_window = abs(it["ts"] - cluster["seed_ts"]) <= COVERAGE_WINDOW_SECONDS
+            same_url = bool(url and url == cluster["seed_url"])
+            similar = _coverage_similar(tokens, cves, src["id"], cluster)
+            if same_url or (within_window and similar):
+                cluster["members"].append((it, src))
+                break
+        else:
+            clusters.append({
+                "seed_ts": it["ts"], "seed_url": url,
+                "seed_tokens": tokens, "seed_cves": cves,
+                "seed_source": src["id"],
+                "members": [(it, src)],
+            })
+
+    grouped = []
+    for cluster in clusters:
+        members = cluster["members"]
+        rep_it, rep_src = max(
+            members,
+            key=lambda row: (row[1].get("preferred", False),
+                             item_relevance(row[0], row[1]),
+                             not row[0].get("guessed", False),
+                             len(row[0].get("summary", "")), row[0]["ts"]),
+        )
+        merged = dict(rep_it)
+        merged["ts"] = max(it["ts"] for it, _ in members)
+        merged["relevance"] = max(item_relevance(it, src) for it, src in members)
+        merged["topics"] = sorted({topic for it, _ in members
+                                    for topic in it.get("topics", ())})
+        merged["cves"] = sorted({cve for it, _ in members
+                                  for cve in it.get("cves", ())})
+        alternatives = []
+        for alt_it, alt_src in sorted(members, key=lambda row: row[0]["ts"], reverse=True):
+            if alt_it is rep_it and alt_src is rep_src:
+                continue
+            alternatives.append({
+                "title": alt_it["title"], "link": alt_it["link"],
+                "ts": alt_it["ts"], "source": alt_src["id"],
+                "source_name": alt_src["name"],
+                "preferred": alt_src.get("preferred", False),
+            })
+        merged["coverage_count"] = len(members)
+        merged["coverage_sources_count"] = len({src["id"] for _, src in members})
+        merged["coverage"] = alternatives[:COVERAGE_ALTERNATES_MAX]
+        grouped.append((merged, rep_src))
+    return grouped
+
+
 def _pick_rep(members):
-    return max(members, key=lambda m: (m["preferred"], not m["guessed"],
-                                       len(m["summary"])))
+    return max(members, key=lambda m: (m.get("relevance", 0), m["preferred"],
+                                       not m["guessed"], len(m["summary"])))
 
 
 def compute_breaking():
@@ -500,6 +707,9 @@ def compute_breaking():
             for it in st.get("items", []):
                 if it["ts"] < cutoff:
                     continue
+                relevance = item_relevance(it, src)
+                if relevance < RELEVANCE_THRESHOLD:
+                    continue
                 k = it["link"] or it["id"]
                 if k in seen:
                     continue
@@ -512,6 +722,7 @@ def compute_breaking():
                     "cves": it.get("cves", []),
                     "source": src["id"], "source_name": src["name"],
                     "category": src["category"], "preferred": src["preferred"],
+                    "relevance": relevance,
                     "site": src.get("site") or it["link"],
                 })
     pool.sort(key=lambda m: m["ts"], reverse=True)
@@ -537,7 +748,8 @@ def compute_breaking():
         age_h = (now - max(m["ts"] for m in members)) / 3600
         score = (3.0 * (distinct - 1)
                  + (1.0 if any(m["preferred"] for m in members) else 0.0)
-                 + 2.0 * max(0.0, 1 - age_h / 48))
+                 + 2.0 * max(0.0, 1 - age_h / 48)
+                 + max(m["relevance"] for m in members) / 50)
         scored.append({"members": members, "sources_count": distinct,
                        "score": round(score, 2),
                        "cves": sorted({c for m in members for c in m["cves"]})})
@@ -593,11 +805,74 @@ def is_threat_intel(it, src):
 def effective_topics(it, src, kev):
     """Item topics plus query-time signals (KEV membership, source group)."""
     topics = list(it.get("topics", []))
-    if "exploited" not in topics and any(c in kev for c in it.get("cves", ())):
+    in_kev = any(c in kev for c in it.get("cves", ()))
+    if in_kev and "kev" not in topics:
+        topics.append("kev")
+    if in_kev and "exploited" not in topics:
         topics.append("exploited")
     if "threatintel" not in topics and src.get("group") == "threat-intel":
         topics.append("threatintel")
     return topics
+
+
+def actionability_details(it, src, kev, topics=None):
+    """Score concrete defensive action signals and explain the result."""
+    topics = set(topics or effective_topics(it, src, kev))
+    blob = f"{it['title']} {it.get('summary', '')}"
+    score, reasons = 0, []
+
+    if "kev" in topics:
+        score += 60
+        reasons.append("CISA KEV")
+    elif "exploited" in topics:
+        score += 45
+        reasons.append("Active exploitation")
+    if it.get("cves"):
+        score += 15
+        reasons.append("CVE identified")
+    if ACTION_CRITICAL_RE.search(blob):
+        score += 30
+        reasons.append("Critical impact")
+    if ACTION_URGENT_RE.search(blob):
+        score += 35
+        reasons.append("Urgent containment")
+    elif ACTION_REMEDIATION_RE.search(blob):
+        score += 20
+        reasons.append("Remediation available")
+
+    score = min(100, score)
+    if score >= 70:
+        level = "critical"
+    elif score >= 45:
+        level = "high"
+    elif score >= ACTIONABILITY_THRESHOLD:
+        level = "medium"
+    else:
+        level = "low"
+    return {"score": score, "level": level, "reasons": reasons}
+
+
+def item_payload(it, src, kev):
+    topics = effective_topics(it, src, kev)
+    action = actionability_details(it, src, kev, topics)
+    payload = {
+        "id": it["id"], "title": it["title"], "link": it["link"],
+        "ts": it["ts"], "guessed": it.get("guessed", False),
+        "summary": it["summary"], "topics": topics,
+        "cves": it.get("cves", []), "relevance": item_relevance(it, src),
+        "action_score": action["score"], "action_level": action["level"],
+        "action_reasons": action["reasons"],
+        "source": src["id"], "source_name": src["name"],
+        "category": src["category"], "preferred": src["preferred"],
+        "site": src.get("site") or it["link"],
+    }
+    if it.get("coverage_count", 1) > 1:
+        payload.update(
+            coverage_count=it["coverage_count"],
+            coverage_sources_count=it.get("coverage_sources_count", 1),
+            coverage=it.get("coverage", []),
+        )
+    return payload
 
 
 def collect_items(tab="all", q="", exclude=None, sort="smart"):
@@ -612,6 +887,12 @@ def collect_items(tab="all", q="", exclude=None, sort="smart"):
                 continue
             cat, pref, name = src["category"], src["preferred"], src["name"]
             for it in st.get("items", []):
+                if item_relevance(it, src) < RELEVANCE_THRESHOLD:
+                    continue
+                if (tab == "actionable"
+                        and actionability_details(it, src, kev)["score"]
+                        < ACTIONABILITY_THRESHOLD):
+                    continue
                 if tab == "cyber" and cat != "cyber":
                     continue
                 if tab == "ai" and not (cat == "ai" or "ai" in it["topics"]):
@@ -625,18 +906,25 @@ def collect_items(tab="all", q="", exclude=None, sort="smart"):
                     if not all(t in blob for t in terms):
                         continue
                 rows.append((it, src))
-    seen, out = set(), []
-    for it, src in rows:
-        k = it["link"] or it["id"]
-        if k in seen:
-            continue
-        seen.add(k)
-        out.append((it, src))
+    out = group_coverage(rows)
     if sort == "latest":
         out.sort(key=lambda p: p[0]["ts"], reverse=True)
-    else:  # smart: recency + preferred boost
-        out.sort(key=lambda p: p[0]["ts"] + (PREFERRED_BOOST_SECONDS if p[1]["preferred"] else 0),
-                 reverse=True)
+    else:  # smart: recency + source preference + article relevance/actionability
+        def smart_rank(row):
+            it, src = row
+            rank = (it["ts"]
+                    + (PREFERRED_BOOST_SECONDS if src["preferred"] else 0)
+                    + item_relevance(it, src) * RELEVANCE_BOOST_SECONDS)
+            if tab == "actionable":
+                rank += (actionability_details(it, src, kev)["score"]
+                         * ACTIONABILITY_BOOST_SECONDS)
+            return rank
+
+        out.sort(
+            key=smart_rank,
+            reverse=True,
+        )
+        out = diversify_smart(out)
     return out
 
 
@@ -653,15 +941,7 @@ def api_items(params):
     rows = collect_items(tab, q, exclude, sort)
     page = rows[offset: offset + limit]
     kev = KEV["cves"]
-    items = [{
-        "id": it["id"], "title": it["title"], "link": it["link"],
-        "ts": it["ts"], "guessed": it.get("guessed", False),
-        "summary": it["summary"], "topics": effective_topics(it, src, kev),
-        "cves": it.get("cves", []),
-        "source": src["id"], "source_name": src["name"],
-        "category": src["category"], "preferred": src["preferred"],
-        "site": src.get("site") or it["link"],
-    } for it, src in page]
+    items = [item_payload(it, src, kev) for it, src in page]
     with STATE_LOCK:
         refresh = dict(REFRESH)
         ok = sum(1 for s in FEED_STATE.values() if s.get("status") == "ok")
@@ -703,22 +983,15 @@ def payload_items(live=False):
             if not src:
                 continue
             for it in st.get("items", []):
-                if it["ts"] < cutoff:
+                if (it["ts"] < cutoff
+                        or item_relevance(it, src) < RELEVANCE_THRESHOLD):
                     continue
                 rows.append((it, src))
         ok = sum(1 for s in FEED_STATE.values() if s.get("status") == "ok")
         refresh = dict(REFRESH)
     rows.sort(key=lambda p: p[0]["ts"], reverse=True)
     del rows[SITE_MAX_ITEMS:]
-    items = [{
-        "id": it["id"], "title": it["title"], "link": it["link"],
-        "ts": it["ts"], "guessed": it.get("guessed", False),
-        "summary": it["summary"], "topics": effective_topics(it, src, kev),
-        "cves": it.get("cves", []),
-        "source": src["id"], "source_name": src["name"],
-        "category": src["category"], "preferred": src["preferred"],
-        "site": src.get("site") or it["link"],
-    } for it, src in rows]
+    items = [item_payload(it, src, kev) for it, src in rows]
     payload = {"items": items, "mode": "live" if live else "static",
                "sources_total": len(SOURCES), "sources_ok": ok,
                "generated_at": time.time()}
