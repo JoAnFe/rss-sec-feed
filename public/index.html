@@ -263,6 +263,14 @@ const COVERAGE_STOPWORDS = new Set((
   "report reports researchers hackers attackers security update patch patches now could may " +
   "2024 2025 2026"
 ).split(/\s+/));
+// Template words shared by advisory feeds; ignored when matching cross-source
+// coverage so different products don't merge on boilerplate (mirror of server).
+const ADVISORY_BOILERPLATE = new Set((
+  "multiple vulnerabilities vulnerability allow allows allowing arbitrary code execution " +
+  "remote lead leads leading could issue issues flaw flaws affected affecting versions " +
+  "version advisory advisories bulletin bulletins released release high critical medium " +
+  "severity impact"
+).split(/\s+/));
 function storedJSON(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
   catch { return fallback; }
@@ -275,12 +283,16 @@ const state = {
   total: 0,
   disabled: new Set(storedJSON("disabled", [])),
   bookmarks: new Set(storedJSON("bookmarks", [])),
+  bookmarkData: storedJSON("bookmarkData", {}),  // id -> item snapshot; survives corpus rotation
   read: new Set(storedJSON("read", [])),
   hideRead: localStorage.getItem("hideRead") === "1",
   savedViews: storedJSON("savedViews", []),
+  expanded: new Set(),  // rep ids whose coverage list is open; survives re-render
   sources: null,
   pollTimer: null,
   corpus: null,     // full item list from data/items.json
+  corpusSig: null,  // cheap fingerprint to skip no-op ambient re-renders
+  viewCache: null,  // memoized {key, rows} for the current filter/grouping
   meta: null,       // payload metadata (counts, generated_at, refresh)
   breaking: null,   // clusters from data/breaking.json
   mode: "static",   // "live" when served by server.py, "static" on Pages
@@ -326,18 +338,65 @@ function persistSet(key, values, max = 5000) {
   localStorage.setItem(key, JSON.stringify([...values]));
 }
 
-function markRead(item, isRead = true) {
-  if (isRead) {
-    state.read.delete(item.id);
-    state.read.add(item.id);
-  } else state.read.delete(item.id);
+// Only http(s) links may reach an href — feed-derived "javascript:"/"data:"
+// URLs would otherwise execute in-origin when clicked.
+function safeHref(raw) {
+  if (!raw) return "#";
+  try {
+    const scheme = new URL(raw, location.href).protocol;
+    return (scheme === "http:" || scheme === "https:") ? raw : "#";
+  } catch { return "#"; }
+}
+
+// A merged coverage row stands in for every clustered member. Read/bookmark
+// state keys on ALL member ids so it stays consistent no matter which member
+// happens to be the representative in the current tab/search/refresh.
+function memberIds(item) {
+  return (item.member_ids && item.member_ids.length) ? item.member_ids : [item.id];
+}
+function isRead(item) { return memberIds(item).some(id => state.read.has(id)); }
+function isBookmarked(item) { return memberIds(item).some(id => state.bookmarks.has(id)); }
+
+function markRead(item, read = true) {
+  for (const id of memberIds(item)) {
+    state.read.delete(id);            // re-insert so the LRU cap drops oldest
+    if (read) state.read.add(id);
+  }
   persistSet("read", state.read);
 }
 
+function slimBookmark(item) {
+  return {
+    id: item.id, title: item.title, link: item.link, ts: item.ts,
+    guessed: item.guessed, summary: item.summary, topics: item.topics || [],
+    cves: item.cves || [], relevance: item.relevance || 0,
+    action_score: item.action_score || 0, action_level: item.action_level || "low",
+    action_reasons: item.action_reasons || [], source: item.source,
+    source_name: item.source_name, category: item.category, preferred: item.preferred,
+    site: item.site,
+  };
+}
+
+function persistBookmarkData() {
+  for (const id of Object.keys(state.bookmarkData))
+    if (!state.bookmarks.has(id)) delete state.bookmarkData[id];
+  localStorage.setItem("bookmarkData", JSON.stringify(state.bookmarkData));
+}
+
 function toggleBookmark(item) {
-  if (state.bookmarks.has(item.id)) state.bookmarks.delete(item.id);
-  else state.bookmarks.add(item.id);
+  const ids = memberIds(item);
+  const byId = new Map((state.corpus || []).map(it => [it.id, it]));
+  if (isBookmarked(item)) {
+    for (const id of ids) { state.bookmarks.delete(id); delete state.bookmarkData[id]; }
+  } else {
+    for (const id of ids) {
+      state.bookmarks.add(id);
+      const raw = byId.get(id);            // snapshot so it survives corpus rotation
+      if (raw) state.bookmarkData[id] = slimBookmark(raw);
+    }
+  }
   persistSet("bookmarks", state.bookmarks);
+  persistBookmarkData();
 }
 
 function coverageURL(raw) {
@@ -366,10 +425,15 @@ function similarCoverage(item, tokens, cluster) {
   if (item.source === cluster.source)
     return tokens.size >= 3 && tokens.size === cluster.tokens.size &&
       [...tokens].every(token => cluster.tokens.has(token));
+  // Cross-source: compare only distinctive tokens so templated advisories about
+  // different products don't merge on shared boilerplate.
+  const content = [...tokens].filter(t => !ADVISORY_BOILERPLATE.has(t));
+  const seedContent = [...cluster.tokens].filter(t => !ADVISORY_BOILERPLATE.has(t));
+  const seedSet = new Set(seedContent);
   let intersection = 0;
-  for (const token of tokens) if (cluster.tokens.has(token)) intersection++;
+  for (const token of content) if (seedSet.has(token)) intersection++;
   return intersection >= 3 &&
-    intersection / Math.max(1, Math.min(tokens.size, cluster.tokens.size)) >= .6;
+    intersection / Math.max(1, Math.min(content.length, seedContent.length)) >= .6;
 }
 
 function groupCoverage(items) {
@@ -395,6 +459,7 @@ function groupCoverage(items) {
       (a.guessed - b.guessed) || ((b.summary || "").length - (a.summary || "").length) ||
       (b.ts - a.ts))[0];
     const merged = Object.assign({}, rep);
+    merged.member_ids = members.map(item => item.id);
     merged.ts = Math.max(...members.map(item => item.ts));
     merged.relevance = Math.max(...members.map(item => item.relevance || 0));
     const actionItem = members.slice().sort((a, b) =>
@@ -443,16 +508,17 @@ function topicBadges(meta, item) {
 
 function row(item) {
   const it = el("article", "item");
-  if (state.read.has(item.id)) it.classList.add("read");
+  if (isRead(item)) it.classList.add("read");
   it.appendChild(favicon(item));
   const body = el("div", "body");
 
   const title = el("div", "title");
   const a = el("a", null, item.title);
-  a.href = item.link; a.target = "_blank"; a.rel = "noopener noreferrer";
+  a.href = safeHref(item.link); a.target = "_blank"; a.rel = "noopener noreferrer";
   a.addEventListener("click", () => {
     markRead(item, true);
     it.classList.add("read");
+    syncActions();                 // keep the read toggle in sync with the row
     if (state.hideRead) setTimeout(() => applyView(false), 0);
   });
   title.appendChild(a);
@@ -480,10 +546,12 @@ function row(item) {
 
   if (coverageBtn && item.coverage && item.coverage.length) {
     const list = el("div", "coverage-list");
-    list.hidden = true;
+    const open = state.expanded.has(item.id);   // restore expansion across re-renders
+    list.hidden = !open;
+    coverageBtn.setAttribute("aria-expanded", String(open));
     for (const report of item.coverage) {
       const link = el("a");
-      link.href = report.link; link.target = "_blank"; link.rel = "noopener noreferrer";
+      link.href = safeHref(report.link); link.target = "_blank"; link.rel = "noopener noreferrer";
       const source = el("b", null, report.source_name);
       link.appendChild(source);
       link.appendChild(document.createTextNode(` — ${report.title} · ${timeago(report.ts)}`));
@@ -491,6 +559,7 @@ function row(item) {
     }
     coverageBtn.addEventListener("click", () => {
       list.hidden = !list.hidden;
+      if (list.hidden) state.expanded.delete(item.id); else state.expanded.add(item.id);
       coverageBtn.setAttribute("aria-expanded", String(!list.hidden));
     });
     body.appendChild(list);
@@ -508,22 +577,22 @@ function row(item) {
   const read = el("button");
   read.type = "button";
   function syncActions() {
-    const bookmarked = state.bookmarks.has(item.id), isRead = state.read.has(item.id);
+    const bookmarked = isBookmarked(item), read_ = isRead(item);
     bookmark.textContent = bookmarked ? "★" : "☆";
     bookmark.classList.toggle("on", bookmarked);
     bookmark.setAttribute("aria-label", bookmarked ? "Remove bookmark" : "Add bookmark");
     bookmark.title = bookmarked ? "Remove bookmark" : "Add bookmark";
-    read.textContent = isRead ? "✓" : "○";
-    read.setAttribute("aria-label", isRead ? "Mark unread" : "Mark read");
-    read.title = isRead ? "Mark unread" : "Mark read";
+    read.textContent = read_ ? "✓" : "○";
+    read.setAttribute("aria-label", read_ ? "Mark unread" : "Mark read");
+    read.title = read_ ? "Mark unread" : "Mark read";
   }
   bookmark.addEventListener("click", () => {
     toggleBookmark(item);
     if (state.tab === "bookmarks") applyView(false); else syncActions();
   });
   read.addEventListener("click", () => {
-    markRead(item, !state.read.has(item.id));
-    it.classList.toggle("read", state.read.has(item.id));
+    markRead(item, !isRead(item));
+    it.classList.toggle("read", isRead(item));
     if (state.hideRead) applyView(false); else syncActions();
   });
   syncActions();
@@ -540,7 +609,7 @@ function heroCard(item) {
 
   const title = el("div", "title");
   const a = el("a", null, item.title);
-  a.href = item.link; a.target = "_blank"; a.rel = "noopener noreferrer";
+  a.href = safeHref(item.link); a.target = "_blank"; a.rel = "noopener noreferrer";
   a.addEventListener("click", () => markRead(item, true));
   title.appendChild(a);
   body.appendChild(title);
@@ -593,6 +662,7 @@ function renderHeroView() {
         others.push(m.source_name);
     rep.sources_count = new Set(ms.map(m => m.source)).size;
     rep.other_sources = others.slice(0, 3);
+    rep.member_ids = ms.map(m => m.id);   // marking read dismisses the whole story
     out.push(rep);
     if (out.length >= 5) break;
   }
@@ -646,16 +716,28 @@ function renderStatus() {
    live by server.py at the same path) and all filtering happens client-side. */
 function filterCorpus() {
   const terms = state.q.toLowerCase().split(/\s+/).filter(Boolean);
+  let source = state.corpus;
+  if (state.tab === "bookmarks") {
+    // Union of fresh corpus items and persisted snapshots so bookmarks that
+    // have aged out of the served corpus still appear.
+    const byId = new Map(state.corpus.map(it => [it.id, it]));
+    const seen = new Set();
+    source = [];
+    for (const id of state.bookmarks) {
+      const it = byId.get(id) || state.bookmarkData[id];
+      if (it && !seen.has(it.id)) { seen.add(it.id); source.push(it); }
+    }
+  }
   let out = [];
-  for (const it of state.corpus) {
+  for (const it of source) {
+    const topics = it.topics || [];
     if (state.disabled.has(it.source)) continue;
-    if (state.tab === "bookmarks" && !state.bookmarks.has(it.id)) continue;
     if (state.hideRead && state.read.has(it.id)) continue;
     if (state.tab === "actionable" && (it.action_score || 0) < ACTION_THRESHOLD) continue;
     if (state.tab === "cyber" && it.category !== "cyber") continue;
-    if (state.tab === "ai" && !(it.category === "ai" || it.topics.includes("ai"))) continue;
-    if (state.tab === "exploited" && !it.topics.includes("exploited")) continue;
-    if (state.tab === "intel" && !it.topics.includes("threatintel")) continue;
+    if (state.tab === "ai" && !(it.category === "ai" || topics.includes("ai"))) continue;
+    if (state.tab === "exploited" && !topics.includes("exploited")) continue;
+    if (state.tab === "intel" && !topics.includes("threatintel")) continue;
     if (terms.length) {
       const blob = (it.title + " " + it.summary + " " + it.source_name).toLowerCase();
       if (!terms.every(t => blob.includes(t))) continue;
@@ -682,10 +764,25 @@ function filterCorpus() {
   return selected.concat(deferred);
 }
 
+function corpusSignature(items) {
+  // Cheap fingerprint to detect whether an ambient poll actually changed data.
+  let h = 2166136261 >>> 0;
+  for (const it of items) {
+    h = Math.imul(h ^ (it.ts | 0), 16777619) >>> 0;
+    const id = it.id || "";
+    for (let i = 0; i < id.length; i += 4)
+      h = Math.imul(h ^ id.charCodeAt(i), 16777619) >>> 0;
+  }
+  return items.length + ":" + (h >>> 0);
+}
+
 function applyView(append) {
   if (!state.corpus) return;
   if (!append) state.offset = 0;
-  const rows = filterCorpus();
+  // "Load more" reuses the already grouped+sorted rows instead of re-clustering
+  // the whole corpus for each page.
+  const rows = (append && state.viewCache) ? state.viewCache : filterCorpus();
+  state.viewCache = rows;
   state.total = rows.length;
   renderItems(rows.slice(state.offset, state.offset + PAGE), append);
   renderHeroView();
@@ -713,7 +810,13 @@ async function fetchAll() {
     state.breaking = breaking;
     state.mode = items.mode === "live" ? "live" : "static";
     $("refreshBtn").hidden = state.mode !== "live";
-    applyView(false);
+    // Only rebuild the list when the data actually changed, so an ambient poll
+    // doesn't collapse expanded coverage or reset the reader's pagination.
+    const sig = corpusSignature(state.corpus);
+    if (sig !== state.corpusSig) {
+      state.corpusSig = sig;
+      applyView(false);
+    }
     renderStatus();
     schedulePoll(items.refresh && items.refresh.running);
   } catch (e) {
@@ -740,6 +843,13 @@ function schedulePoll(fast) {
 async function loadSources() {
   const d = await (await fetch("data/sources.json", { cache: "no-cache" })).json();
   state.sources = d.sources;
+  // Drop hidden-source ids that no longer exist (e.g. after a source-list cut)
+  // so they stop inflating the "N sources hidden" count.
+  const known = new Set(d.sources.map(s => s.id));
+  let pruned = false;
+  for (const id of [...state.disabled])
+    if (!known.has(id)) { state.disabled.delete(id); pruned = true; }
+  if (pruned) localStorage.setItem("disabled", JSON.stringify([...state.disabled]));
   const list = $("plist");
   list.textContent = "";
   const ok = d.sources.filter(s => s.status === "ok").length;

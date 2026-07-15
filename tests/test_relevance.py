@@ -57,6 +57,22 @@ class RelevanceScoreTests(unittest.TestCase):
         )
         self.assertGreaterEqual(score, server.RELEVANCE_THRESHOLD)
 
+    def test_ai_industry_news_is_not_suppressed_as_low_signal(self):
+        # Funding/earnings/layoffs are legitimate frontier-AI news on a curated
+        # AI feed and must not trip the low-signal penalty.
+        for title in ("OpenAI closes a $40B funding round",
+                      "AI lab announces layoffs across its research org",
+                      "Chipmaker earnings beat on surging AI demand"):
+            score = server.relevance_score(source(category="ai"), title, topics=["ai"])
+            self.assertGreaterEqual(score, server.RELEVANCE_THRESHOLD, title)
+
+    def test_low_signal_penalty_still_applies_to_cyber_feeds(self):
+        # The exemption is scoped to AI feeds; general low-signal cyber-feed
+        # stories stay suppressed.
+        score = server.relevance_score(
+            source(), "Best laptop deals and discounts this weekend")
+        self.assertLess(score, server.RELEVANCE_THRESHOLD)
+
     def test_threat_intelligence_source_is_relevant_by_default(self):
         score = server.relevance_score(
             source(group="threat-intel"),

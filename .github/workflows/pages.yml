@@ -17,7 +17,16 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run unit tests
+        run: python3 -m unittest discover -s tests -v
+
   build:
+    needs: test          # never deploy a build whose tests are failing
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
