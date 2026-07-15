@@ -55,6 +55,8 @@ SMART_DIVERSITY_WINDOW = 50           # diversify the first page of smart-sort r
 SMART_MAX_PER_SOURCE = 3              # prevent one high-volume feed dominating Top
 ACTIONABILITY_THRESHOLD = 30
 ACTIONABILITY_BOOST_SECONDS = 30 * 60
+EDGE_RELEVANCE_BONUS = 15    # edge/perimeter-device disclosures float up in Top sort
+EDGE_ACTION_BONUS = 20       # …and are prioritised in the Actionable tab
 
 AI_TOPIC_RE = re.compile(
     r"\b(a\.?i\.?|artificial intelligence|machine learning|deep learning|neural net\w*|"
@@ -126,6 +128,33 @@ ACTION_URGENT_RE = re.compile(
     r"|\bemergency\s+(?:patch|update|directive|mitigation)\b"
     r"|\bshut down\b|\bdisable immediately\b|\btake offline\b"
     r"|\bisolate immediately\b|\bdisconnect immediately\b)",
+    re.IGNORECASE,
+)
+
+# Internet-facing edge / perimeter gear (VPNs, firewalls, gateways) is the most
+# aggressively mass-exploited attack surface, so vendor disclosures naming these
+# products are prioritised. Matched against title+summary; the score bonuses are
+# gated on an actual vulnerability/disclosure context (see relevance_score /
+# actionability_details) so passing mentions don't get boosted.
+EDGE_DEVICE_RE = re.compile(
+    r"\b("
+    # perimeter/edge device classes
+    r"ssl[ -]?vpn|vpn (?:appliance|gateway|concentrator)|firewalls?|"
+    r"(?:security|vpn|remote[ -]access|edge|perimeter) (?:gateway|appliance)s?|"
+    r"load[ -]?balancers?|edge (?:device|router)s?|"
+    # network/security vendors & product families frequently mass-exploited
+    r"fortinet|fortios|fortigate|fortiproxy|fortimanager|forticlient|forti\w+|"
+    r"ivanti|connect secure|policy secure|pulse secure|mobileiron|"
+    r"palo alto|pan-os|globalprotect|"
+    r"citrix|netscaler|"
+    r"cisco (?:asa|firepower|ftd|ios xe|anyconnect|adaptive security)|"
+    r"sonicwall|"
+    r"f5 big-?ip|big-?ip|"
+    r"juniper|junos|"
+    r"zyxel|draytek|watchguard|barracuda|sophos (?:xg|firewall|utm)|"
+    r"check ?point (?:gateway|firewall|quantum)|array networks|sangfor|"
+    r"qnap|synology|mikrotik|tp-link|netgear"
+    r")\b",
     re.IGNORECASE,
 )
 
@@ -389,6 +418,11 @@ def relevance_score(src, title, summary="", topics=None, cves=None):
     if "ai" in topics and src.get("category") == "cyber":
         score += 5
 
+    # Edge/perimeter-device vulnerability disclosures are top-priority reading;
+    # boost only when there is a real vuln context, not a passing product mention.
+    if (high_signal or cves) and EDGE_DEVICE_RE.search(blob):
+        score += EDGE_RELEVANCE_BONUS
+
     # Curated AI feeds are trusted on-topic, so industry terms like "funding
     # round", "earnings" or "layoffs" must not suppress legitimate AI news.
     strong_context = (high_signal or cves or {"exploited", "threatintel"} & topics
@@ -425,6 +459,13 @@ def _action_text_score(title, summary=""):
         score += 20
         reasons.append("Remediation available")
     return score, reasons
+
+
+def _is_edge(it):
+    """Read the cached edge-device flag, or derive it for older cache entries."""
+    if "is_edge" in it:
+        return bool(it["is_edge"])
+    return bool(EDGE_DEVICE_RE.search(f"{it['title']} {it.get('summary', '')}"))
 
 
 def diversify_smart(rows):
@@ -482,6 +523,7 @@ def normalize(src, raw, old_by_id):
             "relevance": relevance,
             "action_text_score": action_text_score,
             "action_text_reasons": action_text_reasons,
+            "is_edge": bool(EDGE_DEVICE_RE.search(blob)),
         })
     return out
 
@@ -900,6 +942,12 @@ def actionability_details(it, src, kev, topics=None):
         reasons.append("CVE identified")
     score += text_score
     reasons += text_reasons
+
+    # A disclosure about internet-facing edge gear jumps the queue, but only when
+    # it already carries an actionable signal (so a bare product mention doesn't).
+    if score > 0 and _is_edge(it):
+        score += EDGE_ACTION_BONUS
+        reasons.append("Edge/perimeter device")
 
     score = min(100, score)
     if score >= 70:

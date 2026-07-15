@@ -112,6 +112,30 @@ class ActionabilityTests(unittest.TestCase):
 
         self.assertEqual(action["level"], "low")
 
+    def test_edge_device_disclosure_is_prioritised(self):
+        # An actionable disclosure about edge/perimeter gear outscores the same
+        # disclosure about a generic product and is labelled as such.
+        edge = item("Ivanti Connect Secure patch released for critical bug",
+                    cves=["CVE-2026-3"])
+        generic = item("Internal service patch released for critical bug",
+                       cves=["CVE-2026-3"])
+        edge_action = server.actionability_details(edge, SOURCE, set())
+        generic_action = server.actionability_details(generic, SOURCE, set())
+
+        self.assertEqual(edge_action["score"] - generic_action["score"],
+                         server.EDGE_ACTION_BONUS)
+        self.assertIn("Edge/perimeter device", edge_action["reasons"])
+        self.assertNotIn("Edge/perimeter device", generic_action["reasons"])
+
+    def test_edge_mention_without_action_signal_is_not_boosted(self):
+        # A bare edge-vendor mention with no actionable signal stays at zero.
+        value = item("Cisco announces quarterly financial results")
+
+        action = server.actionability_details(value, SOURCE, set())
+
+        self.assertEqual(action["score"], 0)
+        self.assertNotIn("Edge/perimeter device", action["reasons"])
+
 
 if __name__ == "__main__":
     unittest.main()
