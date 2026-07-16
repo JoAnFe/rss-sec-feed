@@ -111,6 +111,44 @@ class CoverageGroupingTests(unittest.TestCase):
 
         self.assertEqual(grouped[0][1]["id"], "beta")
 
+    def test_empty_link_returns_falsy_canonical_url(self):
+        self.assertEqual(server.canonical_url(""), "")
+        self.assertEqual(server.canonical_url("tag:example.com,2026:1"), "")
+
+    def test_link_less_unrelated_items_do_not_merge(self):
+        # parse_feed/normalize legitimately produce link="" for entries whose
+        # only identifier is a non-http GUID; these must not collapse together.
+        rows = [
+            (item("one", "Ransomware disrupts regional hospital", 1000, link=""),
+             source("alpha")),
+            (item("two", "New quantum encryption standard drafted", 900, link=""),
+             source("beta")),
+        ]
+
+        self.assertEqual(len(server.group_coverage(rows)), 2)
+
+    def test_templated_advisories_across_sources_do_not_merge(self):
+        # Different products, identical advisory template, different feeds.
+        rows = [
+            (item("one", "Multiple vulnerabilities in Google Chrome allow "
+                         "arbitrary code execution", 1000), source("cert-a")),
+            (item("two", "Multiple vulnerabilities in Mozilla Firefox allow "
+                         "arbitrary code execution", 900), source("cert-b")),
+        ]
+
+        self.assertEqual(len(server.group_coverage(rows)), 2)
+
+    def test_same_story_across_sources_still_merges(self):
+        # The boilerplate filter must not suppress genuine cross-source coverage.
+        rows = [
+            (item("one", "RoguePlanet zero day targets Windows Defender", 1000),
+             source("alpha")),
+            (item("two", "Windows Defender targeted by RoguePlanet zero-day", 900),
+             source("beta")),
+        ]
+
+        self.assertEqual(len(server.group_coverage(rows)), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

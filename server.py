@@ -55,6 +55,8 @@ SMART_DIVERSITY_WINDOW = 50           # diversify the first page of smart-sort r
 SMART_MAX_PER_SOURCE = 3              # prevent one high-volume feed dominating Top
 ACTIONABILITY_THRESHOLD = 30
 ACTIONABILITY_BOOST_SECONDS = 30 * 60
+EDGE_RELEVANCE_BONUS = 15    # edge/perimeter-device disclosures float up in Top sort
+EDGE_ACTION_BONUS = 20       # …and are prioritised in the Actionable tab
 
 AI_TOPIC_RE = re.compile(
     r"\b(a\.?i\.?|artificial intelligence|machine learning|deep learning|neural net\w*|"
@@ -121,9 +123,38 @@ ACTION_REMEDIATION_RE = re.compile(
 )
 
 ACTION_URGENT_RE = re.compile(
-    r"\b(urgent(?::|\s+(?:action|patch|update|warning|advisory|mitigation|response))|"
-    r"emergency (?:patch|update|directive|mitigation)|shut down|disable immediately|take offline|"
-    r"isolate immediately|disconnect immediately)\b",
+    r"(?:\burgent\b\s*:"                        # "Urgent:" advisory headlines
+    r"|\burgent\s+(?:action|patch|update|warning|advisory|mitigation|response)\b"
+    r"|\bemergency\s+(?:patch|update|directive|mitigation)\b"
+    r"|\bshut down\b|\bdisable immediately\b|\btake offline\b"
+    r"|\bisolate immediately\b|\bdisconnect immediately\b)",
+    re.IGNORECASE,
+)
+
+# Internet-facing edge / perimeter gear (VPNs, firewalls, gateways) is the most
+# aggressively mass-exploited attack surface, so vendor disclosures naming these
+# products are prioritised. Matched against title+summary; the score bonuses are
+# gated on an actual vulnerability/disclosure context (see relevance_score /
+# actionability_details) so passing mentions don't get boosted.
+EDGE_DEVICE_RE = re.compile(
+    r"\b("
+    # perimeter/edge device classes
+    r"ssl[ -]?vpn|vpn (?:appliance|gateway|concentrator)|firewalls?|"
+    r"(?:security|vpn|remote[ -]access|edge|perimeter) (?:gateway|appliance)s?|"
+    r"load[ -]?balancers?|edge (?:device|router)s?|"
+    # network/security vendors & product families frequently mass-exploited
+    r"fortinet|fortios|fortigate|fortiproxy|fortimanager|forticlient|forti\w+|"
+    r"ivanti|connect secure|policy secure|pulse secure|mobileiron|"
+    r"palo alto|pan-os|globalprotect|"
+    r"citrix|netscaler|"
+    r"cisco (?:asa|firepower|ftd|ios xe|anyconnect|adaptive security)|"
+    r"sonicwall|"
+    r"f5 big-?ip|big-?ip|"
+    r"juniper|junos|"
+    r"zyxel|draytek|watchguard|barracuda|sophos (?:xg|firewall|utm)|"
+    r"check ?point (?:gateway|firewall|quantum)|array networks|sangfor|"
+    r"qnap|synology|mikrotik|tp-link|netgear"
+    r")\b",
     re.IGNORECASE,
 )
 
@@ -149,6 +180,15 @@ STOPWORDS = frozenset(
     after more say says said report reports researchers hackers attackers
     security update patch patches now could may 2024 2025 2026""".split()
 )
+# Template words shared by advisory feeds ("Multiple vulnerabilities in <X>
+# allow arbitrary code execution"). Cross-source coverage matching ignores
+# these so two advisories about different products don't merge on boilerplate.
+ADVISORY_BOILERPLATE = frozenset(
+    """multiple vulnerabilities vulnerability allow allows allowing arbitrary
+    code execution remote lead leads leading could issue issues flaw flaws
+    affected affecting versions version advisory advisories bulletin bulletins
+    released release high critical medium severity impact""".split()
+)
 
 CONTENT_TYPES = {
     ".html": "text/html; charset=utf-8",
@@ -170,6 +210,20 @@ KEV = {"cves": set(), "fetched_at": 0.0}       # CVE ids in the CISA KEV catalog
 BREAKING = {"clusters": [], "computed_at": 0.0}
 WAKE = threading.Event()
 ARGS = None
+
+# collect_items() groups the whole corpus (O(n²) clustering); feed data only
+# changes on a refresh sweep, so memoize grouped results per generation. Each
+# completed sweep bumps CACHE_GEN, invalidating every cached query at once.
+CACHE_GEN = 0
+COLLECT_LOCK = threading.Lock()
+_COLLECT_CACHE = {"gen": -1, "entries": {}}
+
+
+def bump_cache_gen():
+    """Invalidate memoized query results after feed state changes."""
+    global CACHE_GEN
+    with STATE_LOCK:
+        CACHE_GEN += 1
 
 
 # ---------------------------------------------------------------- fetching
@@ -364,7 +418,15 @@ def relevance_score(src, title, summary="", topics=None, cves=None):
     if "ai" in topics and src.get("category") == "cyber":
         score += 5
 
-    strong_context = high_signal or cves or {"exploited", "threatintel"} & topics
+    # Edge/perimeter-device vulnerability disclosures are top-priority reading;
+    # boost only when there is a real vuln context, not a passing product mention.
+    if (high_signal or cves) and EDGE_DEVICE_RE.search(blob):
+        score += EDGE_RELEVANCE_BONUS
+
+    # Curated AI feeds are trusted on-topic, so industry terms like "funding
+    # round", "earnings" or "layoffs" must not suppress legitimate AI news.
+    strong_context = (high_signal or cves or {"exploited", "threatintel"} & topics
+                      or src.get("category") == "ai")
     if LOW_SIGNAL_NEWS_RE.search(blob) and not strong_context:
         score -= 25
     return max(0, min(100, score))
@@ -376,6 +438,34 @@ def item_relevance(it, src):
         return int(it["relevance"])
     return relevance_score(src, it["title"], it.get("summary", ""),
                            it.get("topics", ()), it.get("cves", ()))
+
+
+def _action_text_score(title, summary=""):
+    """Regex-derived action signals that depend only on the article text.
+
+    Computed once at normalize time and cached on the item (like relevance) so
+    query-time actionability scoring costs a dict lookup, not several regex
+    scans, under the state lock on every request.
+    """
+    blob = f"{title} {summary}"
+    score, reasons = 0, []
+    if ACTION_CRITICAL_RE.search(blob):
+        score += 30
+        reasons.append("Critical impact")
+    if ACTION_URGENT_RE.search(blob):
+        score += 35
+        reasons.append("Urgent containment")
+    elif ACTION_REMEDIATION_RE.search(blob):
+        score += 20
+        reasons.append("Remediation available")
+    return score, reasons
+
+
+def _is_edge(it):
+    """Read the cached edge-device flag, or derive it for older cache entries."""
+    if "is_edge" in it:
+        return bool(it["is_edge"])
+    return bool(EDGE_DEVICE_RE.search(f"{it['title']} {it.get('summary', '')}"))
 
 
 def diversify_smart(rows):
@@ -419,6 +509,8 @@ def normalize(src, raw, old_by_id):
         if THREAT_INTEL_RE.search(blob):
             topics.append("threatintel")  # content signal; source group checked at query time
         relevance = relevance_score(src, r["title"], r["summary"], topics, cves)
+        action_text_score, action_text_reasons = _action_text_score(
+            r["title"], r["summary"])
         out.append({
             "id": iid,
             "title": r["title"],
@@ -429,6 +521,9 @@ def normalize(src, raw, old_by_id):
             "topics": topics,
             "cves": cves,
             "relevance": relevance,
+            "action_text_score": action_text_score,
+            "action_text_reasons": action_text_reasons,
+            "is_edge": bool(EDGE_DEVICE_RE.search(blob)),
         })
     return out
 
@@ -479,6 +574,7 @@ def refresh_all():
         ok = sum(1 for s in FEED_STATE.values() if s["status"] == "ok")
         n = len(srcs)
     save_cache()
+    bump_cache_gen()  # feed state changed — invalidate memoized queries
     try:
         compute_breaking()
     except Exception as exc:  # noqa: BLE001 — clustering must never kill the sweep
@@ -606,6 +702,10 @@ def canonical_url(url):
     try:
         parsed = urllib.parse.urlsplit(url)
         host = (parsed.hostname or "").lower()
+        if not host:
+            # No host (empty or scheme-only link): return a falsy value so
+            # link-less items never collapse into one same-URL cluster.
+            return ""
         if host.startswith("www."):
             host = host[4:]
         query = urllib.parse.urlencode([
@@ -629,7 +729,12 @@ def _coverage_similar(tokens, cves, src_id, cluster):
         return True
     if src_id == cluster["seed_source"]:
         return len(tokens) >= SIM_MIN_OVERLAP and tokens == cluster["seed_tokens"]
-    return _similar(tokens, cves, cluster["seed_tokens"], seed_cves)
+    # Cross-source titles: compare only distinctive tokens so templated advisory
+    # headlines about different products ("Multiple vulnerabilities in Chrome…"
+    # vs "…in Firefox…") don't merge on shared boilerplate alone.
+    content = tokens - ADVISORY_BOILERPLATE
+    seed_content = cluster["seed_tokens"] - ADVISORY_BOILERPLATE
+    return _similar(content, cves, seed_content, seed_cves)
 
 
 def group_coverage(rows):
@@ -818,7 +923,12 @@ def effective_topics(it, src, kev):
 def actionability_details(it, src, kev, topics=None):
     """Score concrete defensive action signals and explain the result."""
     topics = set(topics or effective_topics(it, src, kev))
-    blob = f"{it['title']} {it.get('summary', '')}"
+    if "action_text_score" in it:
+        text_score = it["action_text_score"]
+        text_reasons = list(it.get("action_text_reasons", ()))
+    else:  # older cache entry without the cached field
+        text_score, text_reasons = _action_text_score(
+            it["title"], it.get("summary", ""))
     score, reasons = 0, []
 
     if "kev" in topics:
@@ -830,15 +940,14 @@ def actionability_details(it, src, kev, topics=None):
     if it.get("cves"):
         score += 15
         reasons.append("CVE identified")
-    if ACTION_CRITICAL_RE.search(blob):
-        score += 30
-        reasons.append("Critical impact")
-    if ACTION_URGENT_RE.search(blob):
-        score += 35
-        reasons.append("Urgent containment")
-    elif ACTION_REMEDIATION_RE.search(blob):
-        score += 20
-        reasons.append("Remediation available")
+    score += text_score
+    reasons += text_reasons
+
+    # A disclosure about internet-facing edge gear jumps the queue, but only when
+    # it already carries an actionable signal (so a bare product mention doesn't).
+    if score > 0 and _is_edge(it):
+        score += EDGE_ACTION_BONUS
+        reasons.append("Edge/perimeter device")
 
     score = min(100, score)
     if score >= 70:
@@ -876,6 +985,27 @@ def item_payload(it, src, kev):
 
 
 def collect_items(tab="all", q="", exclude=None, sort="smart"):
+    """Memoized wrapper: identical queries within one refresh generation (and
+    every pagination request, which only changes offset) reuse the grouped
+    result instead of re-clustering the corpus."""
+    exclude = exclude or set()
+    key = (tab, q or "", tuple(sorted(exclude)), sort)
+    with STATE_LOCK:
+        gen = CACHE_GEN
+    with COLLECT_LOCK:
+        if _COLLECT_CACHE["gen"] != gen:
+            _COLLECT_CACHE["gen"] = gen
+            _COLLECT_CACHE["entries"] = {}
+        elif key in _COLLECT_CACHE["entries"]:
+            return _COLLECT_CACHE["entries"][key]
+    out = _collect_items_uncached(tab, q, exclude, sort)
+    with COLLECT_LOCK:
+        if _COLLECT_CACHE["gen"] == gen:
+            _COLLECT_CACHE["entries"][key] = out
+    return out
+
+
+def _collect_items_uncached(tab="all", q="", exclude=None, sort="smart"):
     exclude = exclude or set()
     terms = [t for t in (q or "").lower().split() if t]
     kev = KEV["cves"]
