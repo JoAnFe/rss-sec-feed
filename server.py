@@ -162,6 +162,23 @@ KEV_URL = ("https://www.cisa.gov/sites/default/files/feeds/"
            "known_exploited_vulnerabilities.json")
 KEV_REFRESH_SECONDS = 6 * 3600  # refetch the KEV catalog at most every 6h
 
+# FIRST EPSS: predicted 30-day exploitation probability per CVE — the standard
+# complement to KEV's *confirmed* exploitation. Fetched for the CVEs actually in
+# the corpus, batched, and cached like the KEV catalog.
+EPSS_URL = "https://api.first.org/data/v1/epss"
+EPSS_REFRESH_SECONDS = 6 * 3600
+EPSS_BATCH = 80             # CVEs per API request (keeps the query string short)
+EPSS_MAX_CVES = 4000        # cap the per-sweep enrichment set
+EPSS_PROB_HIGH = 0.5        # >=50% predicted exploitation -> "high"
+EPSS_PCT_HIGH = 0.95        # …or top-5% of all CVEs by percentile
+
+# Threat-intel prioritisation weights.
+RANSOMWARE_ACTION_BONUS = 25       # KEV entry tied to known ransomware campaigns
+EPSS_ACTION_BONUS = 15             # high predicted exploitation probability
+KEV_RANK_BOOST_SECONDS = 6 * 3600          # float confirmed-exploited items up in Top
+RANSOMWARE_RANK_BOOST_SECONDS = 18 * 3600  # …ransomware-linked highest
+EPSS_RANK_BOOST_SECONDS = 6 * 3600         # …and likely-to-be-exploited items too
+
 SITE_WINDOW_DAYS = 30      # static payload: drop items older than this
 SITE_MAX_ITEMS = 6000      # static payload: hard cap on shipped items
 
@@ -206,7 +223,8 @@ STATE_LOCK = threading.Lock()
 SOURCES = {}          # id -> source dict from sources.json
 FEED_STATE = {}       # id -> {status, error, last_ok, fetched_at, items: [...]}
 REFRESH = {"running": False, "done": 0, "total": 0, "started": 0.0, "finished": 0.0}
-KEV = {"cves": set(), "fetched_at": 0.0}       # CVE ids in the CISA KEV catalog
+KEV = {"cves": set(), "records": {}, "fetched_at": 0.0}  # id set + full KEV records
+EPSS = {"scores": {}, "fetched_at": 0.0}       # CVE id -> {epss, percentile}
 BREAKING = {"clusters": [], "computed_at": 0.0}
 WAKE = threading.Event()
 ARGS = None
@@ -574,7 +592,11 @@ def refresh_all():
         ok = sum(1 for s in FEED_STATE.values() if s["status"] == "ok")
         n = len(srcs)
     save_cache()
-    bump_cache_gen()  # feed state changed — invalidate memoized queries
+    try:
+        refresh_epss()  # enrich the CVEs we just ingested with predicted-exploitation
+    except Exception as exc:  # noqa: BLE001 — enrichment must never kill the sweep
+        print(f"[epss] refresh failed: {exc}")
+    bump_cache_gen()  # feed state + intel changed — invalidate memoized queries
     try:
         compute_breaking()
     except Exception as exc:  # noqa: BLE001 — clustering must never kill the sweep
@@ -632,11 +654,29 @@ def kev_path():
     return os.path.join(ARGS.data, "kev.json")
 
 
+def _kev_records_from_payload(payload):
+    """Reduce the raw CISA KEV catalog to the fields we surface per CVE."""
+    records = {}
+    for v in payload.get("vulnerabilities", []):
+        cid = (v.get("cveID") or "").strip().upper()
+        if not cid:
+            continue
+        records[cid] = {
+            "ransomware": (v.get("knownRansomwareCampaignUse") or "").strip().lower() == "known",
+            "due_date": v.get("dueDate") or "",
+            "date_added": v.get("dateAdded") or "",
+            "vendor": v.get("vendorProject") or "",
+            "product": v.get("product") or "",
+            "name": v.get("vulnerabilityName") or "",
+        }
+    return records
+
+
 def save_kev():
     os.makedirs(ARGS.data, exist_ok=True)
     with STATE_LOCK:
         payload = {"fetched_at": KEV["fetched_at"], "count": len(KEV["cves"]),
-                   "cves": sorted(KEV["cves"])}
+                   "records": KEV["records"]}
     tmp = kev_path() + ".tmp"
     with open(tmp, "w", encoding="utf-8") as fh:
         fh.write(json.dumps(payload))
@@ -647,10 +687,15 @@ def load_kev():
     try:
         with open(kev_path(), encoding="utf-8") as fh:
             payload = json.load(fh)
-        cves = {c.upper() for c in payload.get("cves", []) if isinstance(c, str)}
+        records = payload.get("records")
+        if records is None:  # migrate an older cache that stored only the id list
+            records = {c.upper(): {} for c in payload.get("cves", []) if isinstance(c, str)}
+        records = {c.upper(): r for c, r in records.items()
+                   if isinstance(c, str) and isinstance(r, dict)}
         with STATE_LOCK:
-            KEV.update(cves=cves, fetched_at=float(payload.get("fetched_at", 0)))
-        print(f"[kev] warm start: {len(cves)} exploited CVEs from previous run")
+            KEV.update(cves=set(records), records=records,
+                       fetched_at=float(payload.get("fetched_at", 0)))
+        print(f"[kev] warm start: {len(records)} exploited CVEs from previous run")
     except FileNotFoundError:
         pass
     except (json.JSONDecodeError, OSError, TypeError, ValueError) as exc:
@@ -662,16 +707,105 @@ def refresh_kev():
         return
     try:
         payload = json.loads(fetch_bytes(KEV_URL, timeout=20))
-        cves = {v["cveID"].upper() for v in payload.get("vulnerabilities", [])
-                if v.get("cveID")}
-        if not cves:
+        records = _kev_records_from_payload(payload)
+        if not records:
             raise ValueError("KEV catalog parsed but empty")
         with STATE_LOCK:
-            KEV.update(cves=cves, fetched_at=time.time())
+            KEV.update(cves=set(records), records=records, fetched_at=time.time())
         save_kev()
-        print(f"[kev] {len(cves)} exploited CVEs loaded")
+        rw = sum(1 for r in records.values() if r.get("ransomware"))
+        print(f"[kev] {len(records)} exploited CVEs loaded ({rw} ransomware-linked)")
     except Exception as exc:  # noqa: BLE001 — never fatal; keep old set, retry next sweep
         print(f"[kev] fetch failed, keeping {len(KEV['cves'])} cached: {exc}")
+
+
+# ---------------------------------------------------------------- EPSS scores
+
+def epss_path():
+    return os.path.join(ARGS.data, "epss.json")
+
+
+def _epss_scores_from_rows(rows):
+    scores = {}
+    for row in rows or ():
+        cid = (row.get("cve") or "").strip().upper()
+        if not cid:
+            continue
+        try:
+            scores[cid] = {"epss": float(row["epss"]),
+                           "percentile": float(row["percentile"])}
+        except (KeyError, TypeError, ValueError):
+            continue
+    return scores
+
+
+def save_epss():
+    os.makedirs(ARGS.data, exist_ok=True)
+    with STATE_LOCK:
+        payload = {"fetched_at": EPSS["fetched_at"], "scores": EPSS["scores"]}
+    tmp = epss_path() + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        fh.write(json.dumps(payload))
+    os.replace(tmp, epss_path())
+
+
+def load_epss():
+    try:
+        with open(epss_path(), encoding="utf-8") as fh:
+            payload = json.load(fh)
+        scores = _epss_scores_from_rows(
+            {"cve": c, **v} for c, v in payload.get("scores", {}).items()
+            if isinstance(c, str) and isinstance(v, dict))
+        with STATE_LOCK:
+            EPSS.update(scores=scores, fetched_at=float(payload.get("fetched_at", 0)))
+        print(f"[epss] warm start: {len(scores)} scores from previous run")
+    except FileNotFoundError:
+        pass
+    except (json.JSONDecodeError, OSError, TypeError, ValueError) as exc:
+        print(f"[epss] ignoring unreadable epss cache: {exc}")
+
+
+def _corpus_cves():
+    seen = set()
+    with STATE_LOCK:
+        for st in FEED_STATE.values():
+            for it in st.get("items", []):
+                for c in it.get("cves", ()):
+                    seen.add(c.upper())
+    return sorted(seen)
+
+
+def refresh_epss():
+    """Fetch EPSS scores for the CVEs currently in the corpus, batched."""
+    if time.time() - EPSS["fetched_at"] < EPSS_REFRESH_SECONDS:
+        return
+    cves = _corpus_cves()[:EPSS_MAX_CVES]
+    if not cves:
+        return
+    # No &limit: the API default (100) already covers a batch of EPSS_BATCH, and
+    # each batch is fetched independently so one failed request can't discard the
+    # scores gathered by the others.
+    scores, failed = {}, 0
+    for i in range(0, len(cves), EPSS_BATCH):
+        batch = cves[i:i + EPSS_BATCH]
+        url = EPSS_URL + "?cve=" + urllib.parse.quote(",".join(batch), safe=",")
+        try:
+            payload = json.loads(fetch_bytes(url, timeout=20))
+            scores.update(_epss_scores_from_rows(payload.get("data", [])))
+        except Exception as exc:  # noqa: BLE001 — skip this batch, keep going
+            failed += 1
+            if ARGS and ARGS.verbose:
+                print(f"  [epss] batch failed: {exc}")
+    if not scores:
+        print(f"[epss] no scores fetched ({failed} batches failed), keeping "
+              f"{len(EPSS['scores'])} cached")
+        return
+    with STATE_LOCK:
+        EPSS.update(scores=scores, fetched_at=time.time())
+    save_epss()
+    high = sum(1 for s in scores.values() if s["epss"] >= EPSS_PROB_HIGH)
+    note = f", {failed} batches failed" if failed else ""
+    print(f"[epss] {len(scores)} scores loaded ({high} >= {EPSS_PROB_HIGH:.0%}{note})")
 
 
 # ---------------------------------------------------------------- breaking news
@@ -920,9 +1054,47 @@ def effective_topics(it, src, kev):
     return topics
 
 
-def actionability_details(it, src, kev, topics=None):
+def item_intel(it, kev_records=None, epss_scores=None):
+    """Threat-intel enrichment for an item's CVEs, reduced to the most severe
+    signal across them: the CISA KEV record (ransomware-campaign use, remediation
+    due date, vendor/product) and the FIRST EPSS exploitation probability.
+
+    Query-time — reads the live catalogs rather than anything cached on the item,
+    so a CVE newly added to KEV or a changed EPSS score is reflected immediately.
+    """
+    kev_records = KEV["records"] if kev_records is None else kev_records
+    epss_scores = EPSS["scores"] if epss_scores is None else epss_scores
+    cves = [c.upper() for c in it.get("cves", ())]
+    intel = {}
+
+    recs = [kev_records[c] for c in cves if c in kev_records]
+    if recs:
+        intel["kev"] = True
+        intel["ransomware"] = any(r.get("ransomware") for r in recs)
+        dues = sorted(r["due_date"] for r in recs if r.get("due_date"))
+        if dues:
+            intel["kev_due"] = dues[0]
+        for r in recs:
+            product = " ".join(x for x in (r.get("vendor"), r.get("product")) if x)
+            if product:
+                intel["kev_product"] = product
+                break
+
+    scored = [epss_scores[c] for c in cves if c in epss_scores]
+    if scored:
+        top = max(scored, key=lambda s: s["epss"])
+        intel["epss"] = round(top["epss"], 4)
+        intel["epss_pct"] = round(top["percentile"], 4)
+        intel["epss_high"] = (top["epss"] >= EPSS_PROB_HIGH
+                              or top["percentile"] >= EPSS_PCT_HIGH)
+    return intel
+
+
+def actionability_details(it, src, kev, topics=None, intel=None):
     """Score concrete defensive action signals and explain the result."""
     topics = set(topics or effective_topics(it, src, kev))
+    if intel is None:
+        intel = item_intel(it)
     if "action_text_score" in it:
         text_score = it["action_text_score"]
         text_reasons = list(it.get("action_text_reasons", ()))
@@ -937,9 +1109,15 @@ def actionability_details(it, src, kev, topics=None):
     elif "exploited" in topics:
         score += 45
         reasons.append("Active exploitation")
+    if intel.get("ransomware"):
+        score += RANSOMWARE_ACTION_BONUS
+        reasons.append("Ransomware campaign")
     if it.get("cves"):
         score += 15
         reasons.append("CVE identified")
+    if intel.get("epss_high"):
+        score += EPSS_ACTION_BONUS
+        reasons.append(f"High EPSS {round(intel['epss'] * 100)}%")
     score += text_score
     reasons += text_reasons
 
@@ -963,7 +1141,8 @@ def actionability_details(it, src, kev, topics=None):
 
 def item_payload(it, src, kev):
     topics = effective_topics(it, src, kev)
-    action = actionability_details(it, src, kev, topics)
+    intel = item_intel(it)
+    action = actionability_details(it, src, kev, topics, intel)
     payload = {
         "id": it["id"], "title": it["title"], "link": it["link"],
         "ts": it["ts"], "guessed": it.get("guessed", False),
@@ -975,6 +1154,8 @@ def item_payload(it, src, kev):
         "category": src["category"], "preferred": src["preferred"],
         "site": src.get("site") or it["link"],
     }
+    if intel:
+        payload["intel"] = intel
     if it.get("coverage_count", 1) > 1:
         payload.update(
             coverage_count=it["coverage_count"],
@@ -1045,6 +1226,15 @@ def _collect_items_uncached(tab="all", q="", exclude=None, sort="smart"):
             rank = (it["ts"]
                     + (PREFERRED_BOOST_SECONDS if src["preferred"] else 0)
                     + item_relevance(it, src) * RELEVANCE_BOOST_SECONDS)
+            # Threat-intel prioritisation across every tab: confirmed and
+            # likely-exploited items float up regardless of recency.
+            intel = item_intel(it)
+            if intel.get("kev"):
+                rank += KEV_RANK_BOOST_SECONDS
+            if intel.get("ransomware"):
+                rank += RANSOMWARE_RANK_BOOST_SECONDS
+            if intel.get("epss_high"):
+                rank += EPSS_RANK_BOOST_SECONDS
             if tab == "actionable":
                 rank += (actionability_details(it, src, kev)["score"]
                          * ACTIONABILITY_BOOST_SECONDS)
@@ -1263,6 +1453,7 @@ def main():
     load_sources()
     load_cache()
     load_kev()
+    load_epss()
     if ARGS.build:
         build_site()
         return
