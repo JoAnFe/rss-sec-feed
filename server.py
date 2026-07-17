@@ -211,6 +211,144 @@ ADVISORY_BOILERPLATE = frozenset(
     released release high critical medium severity impact""".split()
 )
 
+# ------------------------------------------------ threat actors & malware
+# Curated alias catalogs: canonical name -> aliases as they appear in headlines
+# (vendor naming schemes included: Mandiant APTnn, CrowdStrike animals,
+# Microsoft weather). Matching is case-insensitive with flexible separators
+# ("APT28" == "APT-28" == "apt 28"). Names that are common English words carry
+# a qualifier ("play ransomware") so ordinary prose can't trigger them.
+# NOTE: mirrored in public/index.html (ACTOR_ALIASES/MALWARE_ALIASES) for
+# alias-aware search and badge tooltips — keep the two tables in sync.
+THREAT_ACTORS = {
+    "APT28": ["apt 28", "fancy bear", "sofacy", "forest blizzard", "strontium",
+              "pawn storm", "sednit"],
+    "APT29": ["apt 29", "cozy bear", "midnight blizzard", "nobelium", "the dukes"],
+    "Sandworm": ["sandworm", "seashell blizzard", "voodoo bear", "telebots"],
+    "Turla": ["turla", "secret blizzard", "venomous bear"],
+    "Gamaredon": ["gamaredon", "aqua blizzard", "primitive bear"],
+    "Star Blizzard": ["star blizzard", "coldriver", "callisto group", "seaborgium"],
+    "APT41": ["apt 41", "winnti", "wicked panda", "double dragon", "brass typhoon"],
+    "APT40": ["apt 40", "leviathan", "gingham typhoon"],
+    "APT31": ["apt 31", "zirconium", "violet typhoon"],
+    "APT10": ["apt 10", "stone panda", "cicada"],
+    "Volt Typhoon": ["volt typhoon", "vanguard panda"],
+    "Salt Typhoon": ["salt typhoon", "earth estries"],
+    "Flax Typhoon": ["flax typhoon"],
+    "Mustang Panda": ["mustang panda", "twill typhoon", "bronze president"],
+    "Lazarus": ["lazarus", "hidden cobra", "diamond sleet"],
+    "Kimsuky": ["kimsuky", "emerald sleet", "velvet chollima"],
+    "Andariel": ["andariel", "onyx sleet", "silent chollima"],
+    "BlueNoroff": ["bluenoroff", "sapphire sleet"],
+    "APT37": ["apt 37", "scarcruft", "ricochet chollima"],
+    "Charming Kitten": ["charming kitten", "apt 35", "mint sandstorm", "phosphorus"],
+    "MuddyWater": ["muddywater", "mango sandstorm", "static kitten", "seedworm"],
+    "OilRig": ["oilrig", "apt 34", "helix kitten", "hazel sandstorm"],
+    "APT33": ["apt 33", "peach sandstorm", "refined kitten", "elfin"],
+    "Scattered Spider": ["scattered spider", "octo tempest", "unc3944",
+                         "muddled libra", "0ktapus"],
+    "LockBit": ["lockbit"],
+    "Cl0p": ["cl0p", "clop", "lace tempest", "ta505"],
+    "ALPHV": ["alphv", "blackcat ransomware", "black cat ransomware"],
+    "Black Basta": ["black basta"],
+    "Akira": ["akira ransomware"],
+    "Play": ["play ransomware", "playcrypt"],
+    "Medusa": ["medusa ransomware"],
+    "Royal": ["royal ransomware", "blacksuit"],
+    "RansomHub": ["ransomhub"],
+    "Qilin": ["qilin"],
+    "Rhysida": ["rhysida"],
+    "BianLian": ["bianlian"],
+    "8Base": ["8base"],
+    "Conti": ["conti"],
+    "REvil": ["revil", "sodinokibi"],
+    "Hive": ["hive ransomware"],
+    "FIN7": ["fin7", "carbanak", "sangria tempest"],
+    "FIN8": ["fin8", "syssphinx"],
+    "Evil Corp": ["evil corp", "indrik spider"],
+    "Wizard Spider": ["wizard spider"],
+    "Killnet": ["killnet"],
+    "Anonymous Sudan": ["anonymous sudan"],
+}
+MALWARE_FAMILIES = {
+    "Cobalt Strike": ["cobalt strike"],
+    "Sliver": ["sliver c2", "sliver implant", "sliver framework"],
+    "Emotet": ["emotet"],
+    "Qakbot": ["qakbot", "qbot"],
+    "TrickBot": ["trickbot"],
+    "IcedID": ["icedid"],
+    "Bumblebee": ["bumblebee loader", "bumblebee malware"],
+    "DarkGate": ["darkgate"],
+    "SocGholish": ["socgholish"],
+    "Raspberry Robin": ["raspberry robin"],
+    "PlugX": ["plugx", "korplug"],
+    "ShadowPad": ["shadowpad"],
+    "AsyncRAT": ["asyncrat"],
+    "Remcos": ["remcos"],
+    "Agent Tesla": ["agent tesla", "agenttesla"],
+    "FormBook": ["formbook"],
+    "XWorm": ["xworm"],
+    "NanoCore": ["nanocore"],
+    "njRAT": ["njrat"],
+    "Gh0st RAT": ["gh0st rat", "gh0strat"],
+    "Lumma": ["lumma stealer", "lummac2", "lumma infostealer"],
+    "RedLine": ["redline stealer", "redline infostealer"],
+    "Vidar": ["vidar stealer", "vidar infostealer"],
+    "Raccoon": ["raccoon stealer", "raccoon infostealer"],
+    "StealC": ["stealc"],
+    "Rhadamanthys": ["rhadamanthys"],
+    "Amadey": ["amadey"],
+    "Mirai": ["mirai"],
+    "XMRig": ["xmrig"],
+    "BlackLotus": ["blacklotus"],
+    "Pegasus": ["pegasus spyware"],
+    "Predator": ["predator spyware"],
+    "Industroyer": ["industroyer"],
+    "Stuxnet": ["stuxnet"],
+    "WannaCry": ["wannacry"],
+    "NotPetya": ["notpetya"],
+}
+
+
+def _compile_catalog(catalog):
+    """Compile {canonical: [aliases]} into one regex plus an alias lookup.
+
+    Aliases are written with spaces; matching accepts space, hyphen, or nothing
+    between words, and lookup keys strip separators so every variant maps back
+    to its canonical name.
+    """
+    lookup, parts = {}, []
+    for canonical, aliases in catalog.items():
+        for alias in aliases:
+            lookup[re.sub(r"[\s\-]+", "", alias.lower())] = canonical
+            parts.append(r"[\s\-]*".join(re.escape(w) for w in alias.split()))
+    parts.sort(key=len, reverse=True)  # prefer the longest alias at a position
+    rx = re.compile(r"\b(?:" + "|".join(parts) + r")\b", re.IGNORECASE)
+    return rx, lookup
+
+
+_ACTOR_RE, _ACTOR_LOOKUP = _compile_catalog(THREAT_ACTORS)
+_MALWARE_RE, _MALWARE_LOOKUP = _compile_catalog(MALWARE_FAMILIES)
+
+
+def _extract_catalog(rx, lookup, text):
+    out = []
+    for m in rx.finditer(text):
+        canonical = lookup.get(re.sub(r"[\s\-]+", "", m.group(0).lower()))
+        if canonical and canonical not in out:
+            out.append(canonical)
+    return out
+
+
+def extract_actors(text):
+    """Canonical threat-actor names mentioned in the text (dedup, in order)."""
+    return _extract_catalog(_ACTOR_RE, _ACTOR_LOOKUP, text)
+
+
+def extract_malware(text):
+    """Canonical malware/tool family names mentioned in the text."""
+    return _extract_catalog(_MALWARE_RE, _MALWARE_LOOKUP, text)
+
+
 CONTENT_TYPES = {
     ".html": "text/html; charset=utf-8",
     ".js": "text/javascript; charset=utf-8",
@@ -505,6 +643,20 @@ def _is_edge(it):
     return bool(EDGE_DEVICE_RE.search(f"{it['title']} {it.get('summary', '')}"))
 
 
+def item_actors(it):
+    """Read cached actor names, or derive them for older cache entries."""
+    if "actors" in it:
+        return list(it["actors"])
+    return extract_actors(f"{it['title']} {it.get('summary', '')}")
+
+
+def item_malware(it):
+    """Read cached malware families, or derive them for older cache entries."""
+    if "malware" in it:
+        return list(it["malware"])
+    return extract_malware(f"{it['title']} {it.get('summary', '')}")
+
+
 def diversify_smart(rows):
     """Limit each source in the first Top window while preserving rank order."""
     selected, deferred, counts = [], [], {}
@@ -545,6 +697,10 @@ def normalize(src, raw, old_by_id):
             topics.append("exploited")  # keyword signal; KEV checked at query time
         if THREAT_INTEL_RE.search(blob):
             topics.append("threatintel")  # content signal; source group checked at query time
+        actors = extract_actors(blob)
+        malware = extract_malware(blob)
+        if (actors or malware) and "threatintel" not in topics:
+            topics.append("threatintel")  # a named actor/family IS threat intel
         relevance = relevance_score(src, r["title"], r["summary"], topics, cves)
         action_text_score, action_text_reasons = _action_text_score(
             r["title"], r["summary"])
@@ -557,6 +713,8 @@ def normalize(src, raw, old_by_id):
             "summary": r["summary"],
             "topics": topics,
             "cves": cves,
+            "actors": actors,
+            "malware": malware,
             "relevance": relevance,
             "action_text_score": action_text_score,
             "action_text_reasons": action_text_reasons,
@@ -929,6 +1087,10 @@ def group_coverage(rows):
                                     for topic in it.get("topics", ())})
         merged["cves"] = sorted({cve for it, _ in members
                                   for cve in it.get("cves", ())})
+        merged["actors"] = sorted({a for it, _ in members
+                                    for a in it.get("actors", ())})
+        merged["malware"] = sorted({m for it, _ in members
+                                     for m in it.get("malware", ())})
         alternatives = []
         for alt_it, alt_src in sorted(members, key=lambda row: row[0]["ts"], reverse=True):
             if alt_it is rep_it and alt_src is rep_src:
@@ -1056,8 +1218,12 @@ def is_exploited(it, kev):
 
 
 def is_threat_intel(it, src):
+    # Named actors/families count as TI content. Cheap dict reads only — old
+    # cache entries without the cached fields fall back to their topics until
+    # the next sweep re-normalizes them (no regex under the state lock).
     return (src.get("group") == "threat-intel"
-            or "threatintel" in it.get("topics", ()))
+            or "threatintel" in it.get("topics", ())
+            or bool(it.get("actors") or it.get("malware")))
 
 
 def effective_topics(it, src, kev):
@@ -1175,6 +1341,12 @@ def item_payload(it, src, kev):
     }
     if intel:
         payload["intel"] = intel
+    actors = item_actors(it)
+    malware = item_malware(it)
+    if actors:
+        payload["actors"] = actors
+    if malware:
+        payload["malware"] = malware
     if it.get("coverage_count", 1) > 1:
         payload.update(
             coverage_count=it["coverage_count"],
