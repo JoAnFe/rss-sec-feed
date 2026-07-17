@@ -10,6 +10,7 @@
     --line:#1e2735; --text:#e6edf3; --muted:#8b98a9; --faint:#5b6879;
     --cyber:#22d3ee; --ai:#a78bfa; --gold:#f5c542; --ok:#34d399; --bad:#f87171;
     --accent:#38bdf8; --exploit:#fb7185; --intel:#34d399; --action:#f59e0b;
+    --actor:#e879f9; --malware:#fb923c;
   }
   @media (prefers-color-scheme: light){
     :root{
@@ -17,6 +18,7 @@
       --line:#dde3ec; --text:#111827; --muted:#5b6675; --faint:#93a0b1;
       --cyber:#0891b2; --ai:#7c3aed; --gold:#b8860b; --ok:#059669; --bad:#dc2626;
       --accent:#0284c7; --exploit:#dc2626; --intel:#059669; --action:#b45309;
+      --actor:#a21caf; --malware:#c2410c;
     }
   }
   *{box-sizing:border-box}
@@ -120,6 +122,8 @@
   .badge.ransom{color:#fff;background:var(--exploit);font-weight:800;letter-spacing:.4px}
   .badge.epss{color:var(--action);background:transparent;box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--action) 55%, transparent)}
   .badge.kevdue{color:var(--accent);background:color-mix(in srgb, var(--accent) 12%, transparent)}
+  .badge.actor{color:var(--actor);background:color-mix(in srgb, var(--actor) 14%, transparent);cursor:pointer;border:0}
+  .badge.malware{color:var(--malware);background:color-mix(in srgb, var(--malware) 14%, transparent);cursor:pointer;border:0}
   .action-reasons{margin-top:7px;font-size:12px;color:var(--action);font-weight:600}
   .time{color:var(--faint)}
   .coverage-btn{border:0;background:transparent;color:var(--accent);padding:0;font:inherit;
@@ -266,6 +270,70 @@ const COVERAGE_STOPWORDS = new Set((
   "report reports researchers hackers attackers security update patch patches now could may " +
   "2024 2025 2026"
 ).split(/\s+/));
+// Mirror of server-side THREAT_ACTORS/MALWARE_FAMILIES alias tables (canonical
+// -> aliases). Used for badge tooltips and alias-aware search: searching any
+// alias finds stories tagged with the canonical name. Keep in sync with server.py.
+const ACTOR_ALIASES = {
+  "APT28": ["apt 28", "fancy bear", "sofacy", "forest blizzard", "strontium", "pawn storm", "sednit"],
+  "APT29": ["apt 29", "cozy bear", "midnight blizzard", "nobelium", "the dukes"],
+  "Sandworm": ["seashell blizzard", "voodoo bear", "telebots"],
+  "Turla": ["secret blizzard", "venomous bear"],
+  "Gamaredon": ["aqua blizzard", "primitive bear"],
+  "Star Blizzard": ["coldriver", "callisto group", "seaborgium"],
+  "APT41": ["apt 41", "winnti", "wicked panda", "double dragon", "brass typhoon"],
+  "APT40": ["apt 40", "leviathan", "gingham typhoon"],
+  "APT31": ["apt 31", "zirconium", "violet typhoon"],
+  "APT10": ["apt 10", "stone panda", "cicada"],
+  "Volt Typhoon": ["vanguard panda"],
+  "Salt Typhoon": ["earth estries"],
+  "Flax Typhoon": [],
+  "Mustang Panda": ["twill typhoon", "bronze president"],
+  "Lazarus": ["hidden cobra", "diamond sleet"],
+  "Kimsuky": ["emerald sleet", "velvet chollima"],
+  "Andariel": ["onyx sleet", "silent chollima"],
+  "BlueNoroff": ["sapphire sleet"],
+  "APT37": ["apt 37", "scarcruft", "ricochet chollima"],
+  "Charming Kitten": ["apt 35", "mint sandstorm", "phosphorus"],
+  "MuddyWater": ["mango sandstorm", "static kitten", "seedworm"],
+  "OilRig": ["apt 34", "helix kitten", "hazel sandstorm"],
+  "APT33": ["apt 33", "peach sandstorm", "refined kitten", "elfin"],
+  "Scattered Spider": ["octo tempest", "unc3944", "muddled libra", "0ktapus"],
+  "LockBit": [],
+  "Cl0p": ["clop", "lace tempest", "ta505"],
+  "ALPHV": ["blackcat"],
+  "Black Basta": [],
+  "Akira": [],
+  "Play": ["playcrypt"],
+  "Medusa": [],
+  "Royal": ["blacksuit"],
+  "RansomHub": [],
+  "Qilin": [],
+  "Rhysida": [],
+  "BianLian": [],
+  "8Base": [],
+  "Conti": [],
+  "REvil": ["sodinokibi"],
+  "Hive": [],
+  "FIN7": ["carbanak", "sangria tempest"],
+  "FIN8": ["syssphinx"],
+  "Evil Corp": ["indrik spider"],
+  "Wizard Spider": [],
+  "Killnet": [],
+  "Anonymous Sudan": [],
+};
+const MALWARE_ALIASES = {
+  "Cobalt Strike": [], "Sliver": [], "Emotet": [], "Qakbot": ["qbot"],
+  "TrickBot": [], "IcedID": [], "Bumblebee": [], "DarkGate": [],
+  "SocGholish": [], "Raspberry Robin": [], "PlugX": ["korplug"],
+  "ShadowPad": [], "AsyncRAT": [], "Remcos": [], "Agent Tesla": [],
+  "FormBook": [], "XWorm": [], "NanoCore": [], "njRAT": [],
+  "Gh0st RAT": [], "Lumma": ["lummac2"], "RedLine": [], "Vidar": [],
+  "Raccoon": [], "StealC": [], "Rhadamanthys": [], "Amadey": [],
+  "Mirai": [], "XMRig": [], "BlackLotus": [], "Pegasus": [],
+  "Predator": [], "Industroyer": [], "Stuxnet": [], "WannaCry": [],
+  "NotPetya": [],
+};
+
 // Template words shared by advisory feeds; ignored when matching cross-source
 // coverage so different products don't merge on boilerplate (mirror of server).
 const ADVISORY_BOILERPLATE = new Set((
@@ -473,6 +541,8 @@ function groupCoverage(items) {
     merged.action_reasons = [...new Set(members.flatMap(item => item.action_reasons || []))];
     merged.topics = [...new Set(members.flatMap(item => item.topics || []))].sort();
     merged.cves = [...new Set(members.flatMap(item => item.cves || []))].sort();
+    merged.actors = [...new Set(members.flatMap(item => item.actors || []))].sort();
+    merged.malware = [...new Set(members.flatMap(item => item.malware || []))].sort();
     merged.coverage_count = members.length;
     merged.coverage_sources_count = new Set(members.map(item => item.source)).size;
     merged.coverage = members.filter(item => item !== rep).slice(0, 12).map(item => ({
@@ -506,6 +576,33 @@ function mergeIntel(members) {
 }
 
 /* ---------- rendering ---------- */
+function searchFor(name) {
+  state.q = name;
+  $("search").value = name;
+  clearSavedSelection();
+  applyView(false);
+}
+
+// Clickable ACTOR / MALWARE chips: tooltip lists the aliases, clicking filters
+// the feed to that name (alias-aware search handles the rest).
+function catalogBadges(meta, names, cls, aliasMap, max = 2) {
+  if (!names || !names.length) return;
+  for (const name of names.slice(0, max)) {
+    const b = el("button", "badge " + cls, name.toUpperCase());
+    b.type = "button";
+    const aliases = aliasMap[name] || [];
+    b.title = "Filter stories about " + name
+      + (aliases.length ? " · aka " + aliases.join(", ") : "");
+    b.addEventListener("click", () => searchFor(name));
+    meta.appendChild(b);
+  }
+  if (names.length > max) {
+    const rest = el("span", "badge " + cls, "+" + (names.length - max));
+    rest.title = names.slice(max).join(", ");
+    meta.appendChild(rest);
+  }
+}
+
 function intelBadges(meta, item) {
   const intel = item.intel;
   if (!intel) return;
@@ -550,6 +647,8 @@ function topicBadges(meta, item) {
     meta.appendChild(b);
   }
   if (tps.includes("threatintel")) meta.appendChild(el("span", "badge intel", "INTEL"));
+  catalogBadges(meta, item.actors, "actor", ACTOR_ALIASES);
+  catalogBadges(meta, item.malware, "malware", MALWARE_ALIASES);
   intelBadges(meta, item);
   if ((item.action_score || 0) >= ACTION_THRESHOLD) {
     const b = el("span", "badge action", (item.action_level || "medium").toUpperCase());
@@ -791,7 +890,13 @@ function filterCorpus() {
     if (state.tab === "exploited" && !topics.includes("exploited")) continue;
     if (state.tab === "intel" && !topics.includes("threatintel")) continue;
     if (terms.length) {
-      const blob = (it.title + " " + it.summary + " " + it.source_name).toLowerCase();
+      // Alias-aware: tagged actor/malware names and all their aliases join the
+      // haystack, so searching "fancy bear" finds stories tagged APT28.
+      let blob = (it.title + " " + it.summary + " " + it.source_name).toLowerCase();
+      for (const name of it.actors || [])
+        blob += " " + name.toLowerCase() + " " + (ACTOR_ALIASES[name] || []).join(" ");
+      for (const name of it.malware || [])
+        blob += " " + name.toLowerCase() + " " + (MALWARE_ALIASES[name] || []).join(" ");
       if (!terms.every(t => blob.includes(t))) continue;
     }
     out.push(it);
