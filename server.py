@@ -46,6 +46,10 @@ USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/126.0 Safari/537.36 rss-sec-feed/1.0"
 )
+# Honest client identifier for JSON APIs. The browser-spoofing USER_AGENT above
+# (used for RSS feeds) is rejected with HTTP 400 by FIRST's EPSS API/WAF, so API
+# calls must not reuse it.
+API_USER_AGENT = "rss-sec-feed/1.0 (+https://github.com/JoAnFe/rss-sec-feed)"
 MAX_FEED_BYTES = 8 * 1024 * 1024
 MAX_ITEMS_PER_FEED = 50
 PREFERRED_BOOST_SECONDS = 12 * 3600  # "smart" sort: preferred items float as if 12h fresher
@@ -263,6 +267,21 @@ def fetch_bytes(url, timeout=12):
         except zlib.error:
             data = zlib.decompress(data, -zlib.MAX_WBITS)
     return data
+
+
+def fetch_json(url, timeout=20):
+    """GET a JSON API with an honest client identity (see API_USER_AGENT)."""
+    req = urllib.request.Request(url, headers={
+        "User-Agent": API_USER_AGENT,
+        "Accept": "application/json",
+        "Accept-Encoding": "gzip",
+    })
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        data = resp.read(MAX_FEED_BYTES)
+        enc = (resp.headers.get("Content-Encoding") or "").lower()
+    if "gzip" in enc:
+        data = gzip.GzipFile(fileobj=io.BytesIO(data)).read(MAX_FEED_BYTES)
+    return json.loads(data)
 
 
 # ---------------------------------------------------------------- parsing
@@ -790,7 +809,7 @@ def refresh_epss():
         batch = cves[i:i + EPSS_BATCH]
         url = EPSS_URL + "?cve=" + urllib.parse.quote(",".join(batch), safe=",")
         try:
-            payload = json.loads(fetch_bytes(url, timeout=20))
+            payload = fetch_json(url, timeout=20)
             scores.update(_epss_scores_from_rows(payload.get("data", [])))
         except Exception as exc:  # noqa: BLE001 — skip this batch, keep going
             failed += 1
