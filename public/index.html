@@ -117,6 +117,9 @@
   .badge.cve{color:var(--accent);background:color-mix(in srgb, var(--accent) 14%, transparent)}
   .badge.intel{color:var(--intel);background:color-mix(in srgb, var(--intel) 14%, transparent)}
   .badge.action{color:var(--action);background:color-mix(in srgb, var(--action) 14%, transparent)}
+  .badge.ransom{color:#fff;background:var(--exploit);font-weight:800;letter-spacing:.4px}
+  .badge.epss{color:var(--action);background:transparent;box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--action) 55%, transparent)}
+  .badge.kevdue{color:var(--accent);background:color-mix(in srgb, var(--accent) 12%, transparent)}
   .action-reasons{margin-top:7px;font-size:12px;color:var(--action);font-weight:600}
   .time{color:var(--faint)}
   .coverage-btn{border:0;background:transparent;color:var(--accent);padding:0;font:inherit;
@@ -460,6 +463,7 @@ function groupCoverage(items) {
       (b.ts - a.ts))[0];
     const merged = Object.assign({}, rep);
     merged.member_ids = members.map(item => item.id);
+    merged.intel = mergeIntel(members);   // most severe TI signal across the cluster
     merged.ts = Math.max(...members.map(item => item.ts));
     merged.relevance = Math.max(...members.map(item => item.relevance || 0));
     const actionItem = members.slice().sort((a, b) =>
@@ -479,7 +483,54 @@ function groupCoverage(items) {
   });
 }
 
+// Reduce the per-member TI enrichment to the most severe signal for the
+// merged coverage row (mirror of server-side item_intel over the union).
+function mergeIntel(members) {
+  const intels = members.map(m => m.intel).filter(Boolean);
+  if (!intels.length) return undefined;
+  const out = {};
+  if (intels.some(i => i.kev)) out.kev = true;
+  if (intels.some(i => i.ransomware)) out.ransomware = true;
+  const dues = intels.map(i => i.kev_due).filter(Boolean).sort();
+  if (dues.length) out.kev_due = dues[0];
+  const prod = intels.find(i => i.kev_product);
+  if (prod) out.kev_product = prod.kev_product;
+  const epssIntels = intels.filter(i => typeof i.epss === "number");
+  if (epssIntels.length) {
+    const top = epssIntels.reduce((a, b) => (b.epss > a.epss ? b : a));
+    out.epss = top.epss;
+    out.epss_pct = top.epss_pct;
+    if (intels.some(i => i.epss_high)) out.epss_high = true;
+  }
+  return out;
+}
+
 /* ---------- rendering ---------- */
+function intelBadges(meta, item) {
+  const intel = item.intel;
+  if (!intel) return;
+  if (intel.ransomware) {
+    const b = el("span", "badge ransom", "RANSOMWARE");
+    b.title = "Linked to known ransomware campaigns (CISA KEV)";
+    meta.appendChild(b);
+  }
+  if (intel.epss_high && typeof intel.epss === "number") {
+    const pct = Math.round(intel.epss * 100);
+    const b = el("span", "badge epss", "EPSS " + pct + "%");
+    b.title = "FIRST EPSS: " + pct + "% predicted exploitation probability in the next 30 days"
+      + (typeof intel.epss_pct === "number" ? " (" + Math.round(intel.epss_pct * 100) + "th percentile)" : "");
+    meta.appendChild(b);
+  }
+  if (intel.kev_due) {
+    const overdue = new Date(intel.kev_due + "T23:59:59Z") < new Date();
+    const b = el("span", "badge " + (overdue ? "ransom" : "kevdue"),
+      (overdue ? "KEV OVERDUE " : "KEV due ") + intel.kev_due);
+    b.title = "CISA KEV remediation deadline " + intel.kev_due
+      + (intel.kev_product ? " — " + intel.kev_product : "");
+    meta.appendChild(b);
+  }
+}
+
 function topicBadges(meta, item) {
   const tps = item.topics || [], cves = item.cves || [];
   if (item.category !== "ai" && tps.includes("ai"))
@@ -499,6 +550,7 @@ function topicBadges(meta, item) {
     meta.appendChild(b);
   }
   if (tps.includes("threatintel")) meta.appendChild(el("span", "badge intel", "INTEL"));
+  intelBadges(meta, item);
   if ((item.action_score || 0) >= ACTION_THRESHOLD) {
     const b = el("span", "badge action", (item.action_level || "medium").toUpperCase());
     b.title = (item.action_reasons || []).join(" · ");
